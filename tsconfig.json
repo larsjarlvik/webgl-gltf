@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "allowJs": false,
+        "target": "es6",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "outDir": "./dist",
+        "baseUrl": "src",
+        "allowSyntheticDefaultImports": true,
+        "noImplicitAny": false,
+        "strictNullChecks": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "forceConsistentCasingInFileNames": true,
+        "esModuleInterop": true,
+        "sourceMap": true
+    }
+}
