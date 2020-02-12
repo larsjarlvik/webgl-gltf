@@ -24,31 +24,34 @@ enum VaryingPosition {
 const getBuffer = async (model: string, buffer: string) => {
     const response = await fetch(`/models/${model}/${buffer}`);
     const blob = await response.blob();
-    return await (<any>blob).arrayBuffer();
+    return await (<any>blob).arrayBuffer() as Float32Array;
 };
 
-const getSize = (type: string) => {
-    switch(type) {
-        case 'VEC2': return 2;
-        case 'VEC3': return 3;
-        case 'VEC4': return 4;
-    }
+const accessorSizes = {
+    'SCALAR': 1,
+    'VEC2': 2,
+    'VEC3': 3,
+    'VEC4': 4,
+    'MAT2': 4,
+    'MAT3': 9,
+    'MAT4': 16
+};
 
-    return 0;
-}
-
-const readFloat32ArrayFromBuffer = (gltf: GlTf, buffers: any, mesh: GlTfMesh, name: string) => {
+const readFloat32ArrayFromBuffer = (gltf: GlTf, buffers: Float32Array[], mesh: GlTfMesh, name: string) => {
     if (!mesh.primitives[0].attributes[name]) {
         return null;
     }
 
-    const positionBuffer = gltf.bufferViews![mesh.primitives[0].attributes[name]];
-    const type = gltf.accessors?.filter(a => a.bufferView === mesh.primitives[0].attributes[name])[0].type;
-    const data = new Float32Array(buffers[positionBuffer.buffer], positionBuffer.byteOffset || 0, positionBuffer.byteLength / 4);
+    const attribute = mesh.primitives[0].attributes[name];
+    const accessor = gltf.accessors![attribute];
+    const bufferView = gltf.bufferViews![accessor.bufferView as number];
+    const size = accessorSizes[accessor.type];
+    const data = new Float32Array(buffers[bufferView.buffer], (accessor.byteOffset || 0) + (bufferView.byteOffset || 0), accessor.count * size);
+
     return {
+        size,
         data,
-        size: getSize(type!),
-    };
+    } as Buffer;
 };
 
 const loadModel = async (model: string) => {
@@ -61,7 +64,7 @@ const loadModel = async (model: string) => {
 
     const meshes = gltf.meshes!.map(m => {
         const indexBuffer = gltf.bufferViews![m.primitives[0].indices!];
-        const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / 2);
+        const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
 
         return {
             indices,
@@ -82,7 +85,7 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, gltfBuffer.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(position, gltfBuffer.size, gl.FLOAT, true, 0, 0);
+    gl.vertexAttribPointer(position, gltfBuffer.size, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(position);
     return buffer;
 }
