@@ -25,6 +25,6 @@ void main() {
         totalNormal += jointTransform[int(joints)] * vec4(normal, 0.0) * weights[i];
     }
 
-    color = weights.xyz;
+    color = totalNormal.xyz;
     gl_Position = pMatrix * mvMatrix * totalLocalPos;
 }

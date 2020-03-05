@@ -1,6 +1,5 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation as GlTfAnimation } from 'types/gltf';
-import { mat4, vec4, vec3, quat } from 'gl-matrix';
-import { Uniforms } from 'shaders/default-shader';
+import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation } from 'types/gltf';
+import { mat4, quat, vec3 } from 'gl-matrix';
 
 interface Buffer {
     data: Float32Array | Int16Array;
@@ -9,19 +8,32 @@ interface Buffer {
     componentType: BufferType;
 }
 
-interface Node {
+interface Joint {
     id: number;
     name: string;
-    children: Node[];
-    matrix: mat4 | null;
-    translation: vec3 | null;
-    rotation: vec4 | null;
+    children: Joint[];
+    localBindTransform: mat4;
+    animatedTransform: mat4;
+    inverseBindTransform: mat4;
 }
 
 interface Model {
-    rootNode: Node;
     meshes: Mesh[];
-    animation: KeyFrame[];
+    rootJoint: Joint;
+    jointCount: number;
+    keyFrames: KeyFrame[];
+}
+
+interface KeyFrame {
+    time: number;
+    node: number;
+    transform: JointTransform;
+}
+
+interface JointTransform {
+    position: vec3;
+    rotation: quat;
+    scale: vec3;
 }
 
 interface Mesh {
@@ -33,13 +45,6 @@ interface Mesh {
     texCoord: Buffer | null;
     joints: Buffer | null;
     weights: Buffer | null;
-}
-
-interface KeyFrame {
-    type: string;
-    time: Buffer;
-    buffer: Buffer;
-    node: number;
 }
 
 enum VaryingPosition {
@@ -73,7 +78,7 @@ const accessorSizes = {
 };
 
 const getArrayFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
-    if (!mesh.primitives[0].attributes[name]) {
+    if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
 
@@ -100,19 +105,43 @@ const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Acces
     } as Buffer;
 };
 
-const loadNodes = (index: number, node: GlTfNode, nodes: GlTfNode[]) => {
+const loadJointHiearchy = (index: number, node: GlTfNode, nodes: GlTfNode[]): Joint => {
+    const transform = mat4.create();
+
+    if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
+    if (node.rotation !== undefined) {
+        const rotation = mat4.create();
+        mat4.fromQuat(rotation, quat.fromValues(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]));
+        mat4.multiply(transform, rotation, transform);
+    }
+    if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
+
     return {
         id: index,
         name: node.name,
-        matrix: node.matrix ? mat4.fromValues.apply(null, node.matrix) : null,
-        children: node.children?.map(n => loadNodes(n, nodes[n], nodes)),
-        translation: node.translation ?? null,
-        rotation: node.rotation ?? null,
-    } as Node;
+        children: node.children?.map(n => loadJointHiearchy(n, nodes[n], nodes)) || [],
+        localBindTransform: transform,
+        animatedTransform: mat4.create(),
+        inverseBindTransform: mat4.create(),
+    } as Joint;
 };
 
-const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffer[]) => {
-    return animation.channels.map(c => {
+const countJoints = (index: number, nodes: GlTfNode[]) => {
+    const count = nodes[index].children?.reduce((n, c) => n + countJoints(c, nodes), 0) || 0;
+    return count + 1;
+}
+
+const calculateInverseBindTransform = (current: Joint, parentBindTransform: mat4) => {
+    const bindTransform = mat4.create();
+    mat4.multiply(bindTransform, parentBindTransform, current.localBindTransform);
+    mat4.invert(bindTransform, bindTransform);
+    current.inverseBindTransform = bindTransform;
+
+    current.children.forEach(c => calculateInverseBindTransform(c, bindTransform));
+};
+
+const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[]) => {
+    const channels = animation.channels.map(c => {
         const sampler = animation.samplers[c.sampler];
 
         const time = readArrayFromBuffer(gltf, buffers, gltf.accessors![sampler.input]);
@@ -123,15 +152,50 @@ const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffe
             type: c.target.path,
             time,
             buffer,
-        } as KeyFrame;
+        };
     });
+
+    const keyFrames: KeyFrame[] = [];
+    for (let i = 0; i < channels[0].time.data.length; i ++) {
+        // TODO: Fix hardcoded channel positions
+        const position = vec3.fromValues(
+            channels[0].buffer.data[i * channels[0].buffer.size],
+            channels[0].buffer.data[i * channels[0].buffer.size + 1],
+            channels[0].buffer.data[i * channels[0].buffer.size + 2]
+        );
+
+        const rotation = quat.fromValues(
+            channels[1].buffer.data[i * channels[1].buffer.size],
+            channels[1].buffer.data[i * channels[1].buffer.size + 1],
+            channels[1].buffer.data[i * channels[1].buffer.size + 2],
+            channels[1].buffer.data[i * channels[1].buffer.size + 3]
+        );
+
+        const scale = vec3.fromValues(
+            channels[2].buffer.data[i * channels[2].buffer.size],
+            channels[2].buffer.data[i * channels[2].buffer.size + 1],
+            channels[2].buffer.data[i * channels[2].buffer.size + 2]
+        );
+
+        keyFrames.push({
+            time: channels[0].time.data[i],
+            node: channels[0].node!,
+            transform: {
+                position,
+                rotation,
+                scale,
+            },
+        })
+    }
+
+    return keyFrames;
 };
 
 const loadModel = async (model: string) => {
     const response = await fetch(`/models/${model}/${model}.gltf`);
     const gltf = await response.json() as GlTf;
 
-    if (!gltf.accessors || gltf.accessors.length === 0) {
+    if (gltf.accessors === undefined || gltf.accessors.length === 0) {
         throw new Error('GLTF File is missing accessors')
     }
 
@@ -155,13 +219,20 @@ const loadModel = async (model: string) => {
         } as Mesh;
     });
 
-    const rootNode = gltf.nodes ? loadNodes(0, gltf.nodes[0], gltf.nodes) : [];
-    const animation = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
+    const rootJoint = gltf.nodes ? loadJointHiearchy(0, gltf.nodes[0], gltf.nodes) : null;
+    const keyFrames = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
+    let jointCount = 0;
+
+    if (rootJoint != null) {
+        calculateInverseBindTransform(rootJoint, mat4.create());
+        jointCount = countJoints(0, gltf.nodes!);
+    }
 
     return {
         meshes,
-        rootNode,
-        animation,
+        rootJoint,
+        jointCount,
+        keyFrames,
     } as Model;
 };
 
@@ -177,7 +248,7 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
     gl.vertexAttribPointer(position, gltfBuffer.size, type, false, 0, 0);
 
     return buffer;
-}
+};
 
 const bindBuffers = (gl: WebGLRenderingContext, mesh: Mesh) => {
     bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
@@ -190,45 +261,14 @@ const bindBuffers = (gl: WebGLRenderingContext, mesh: Mesh) => {
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
-}
-
-const bindAnimation = (gl: WebGLRenderingContext, model: Model, uniforms: Uniforms) => {
-    const ms = model.animation[1].time.data[model.animation[1].time.data.length - 1] * 1000;
-    const i = Math.floor((performance.now() % ms) / ms * model.animation[1].time.data.length);
-
-    const t = mat4.create();
-    const rot = quat.fromValues(
-        model.animation[1].buffer.data[i * model.animation[1].buffer.size],
-        model.animation[1].buffer.data[i * model.animation[1].buffer.size + 1],
-        model.animation[1].buffer.data[i * model.animation[1].buffer.size + 2],
-        model.animation[1].buffer.data[i * model.animation[1].buffer.size + 3]);
-
-    const trans = vec3.fromValues(
-        model.animation[0].buffer.data[i * model.animation[0].buffer.size],
-        model.animation[0].buffer.data[i * model.animation[0].buffer.size + 1],
-        model.animation[0].buffer.data[i * model.animation[0].buffer.size + 2],
-    );
-
-    mat4.translate(t, t, trans);
-    mat4.fromQuat(t, rot);
-    applyNodes(gl, model.rootNode, t, uniforms);
 };
-
-const applyNodes = (gl: WebGLRenderingContext, node: Node, transform: mat4, uniforms: Uniforms) => {
-    if (node.matrix) {
-        const n = mat4.create();
-        mat4.multiply(n, node.matrix, transform);
-        mat4.invert(n, n);
-        gl.uniformMatrix4fv(uniforms.jointTransform[node.id], false, n);
-    }
-
-    if (node.children) node.children.forEach(c => applyNodes(gl, c, transform, uniforms));
-}
 
 export {
     loadModel,
     bindBuffers,
-    bindAnimation,
     Mesh,
     Model,
+    KeyFrame,
+    JointTransform,
+    Joint,
 };

@@ -1,7 +1,8 @@
 import * as shader from 'shaders/shader-loader';
 import * as defaultShader from 'shaders/default-shader';
 import { initializeCamera } from 'camera';
-import { bindBuffers, Model, bindAnimation, loadModel } from 'gltf';
+import { bindBuffers, Model, loadModel } from 'gltf/gltf';
+import { update, bindAnimation } from 'gltf/animator';
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
@@ -24,10 +25,11 @@ const render = (program: WebGLProgram, model: Model) => {
     const uniforms = defaultShader.getUniformLocations(gl, program);
     const camera = initializeCamera(canvas.width, canvas.height);
 
-    gl.uniformMatrix4fv(uniforms.pMatrixLoc, false, camera.pMatrix);
-    gl.uniformMatrix4fv(uniforms.mvMatrixLoc, false, camera.mvMatrix);
+    update(model);
     bindAnimation(gl, model, uniforms);
 
+    gl.uniformMatrix4fv(uniforms.pMatrixLoc, false, camera.pMatrix);
+    gl.uniformMatrix4fv(uniforms.mvMatrixLoc, false, camera.mvMatrix);
     gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);
 
     requestAnimationFrame(() => {
@@ -48,7 +50,6 @@ const startup = async () => {
     shader.linkProgram(gl, program);
 
     const model = await loadModel('rigged');
-    console.log(model);
 
     bindBuffers(gl, model.meshes[0]);
     render(program, model);
