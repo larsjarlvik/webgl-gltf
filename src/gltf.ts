@@ -10,15 +10,16 @@ interface Buffer {
 }
 
 interface Node {
+    id: number;
     name: string;
-    children: number[];
+    children: Node[];
     matrix: mat4 | null;
     translation: vec3 | null;
     rotation: vec4 | null;
 }
 
 interface Model {
-    nodes: Node[];
+    rootNode: Node;
     meshes: Mesh[];
     animation: KeyFrame[];
 }
@@ -99,14 +100,15 @@ const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Acces
     } as Buffer;
 };
 
-const loadNodes = (nodes: GlTfNode[]) => {
-    return nodes.map(n => ({
-        name: n.name,
-        matrix: n.matrix ? mat4.fromValues.apply(null, n.matrix) : null,
-        children: n.children,
-        translation: n.translation ?? null,
-        rotation: n.rotation ?? null,
-    } as Node));
+const loadNodes = (index: number, node: GlTfNode, nodes: GlTfNode[]) => {
+    return {
+        id: index,
+        name: node.name,
+        matrix: node.matrix ? mat4.fromValues.apply(null, node.matrix) : null,
+        children: node.children?.map(n => loadNodes(n, nodes[n], nodes)),
+        translation: node.translation ?? null,
+        rotation: node.rotation ?? null,
+    } as Node;
 };
 
 const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffer[]) => {
@@ -153,12 +155,12 @@ const loadModel = async (model: string) => {
         } as Mesh;
     });
 
-    const nodes = gltf.scene !== undefined ? loadNodes(gltf.nodes!) : [];
+    const rootNode = gltf.nodes ? loadNodes(0, gltf.nodes[0], gltf.nodes) : [];
     const animation = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
 
     return {
         meshes,
-        nodes,
+        rootNode,
         animation,
     } as Model;
 };
@@ -166,11 +168,13 @@ const loadModel = async (model: string) => {
 const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBuffer: Buffer | null) => {
     if (gltfBuffer === null) return;
 
+    const type = gltfBuffer.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT;
+
     const buffer = gl.createBuffer();
     gl.enableVertexAttribArray(position);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, gltfBuffer.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(position, gltfBuffer.size, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(position, gltfBuffer.size, type, false, 0, 0);
 
     return buffer;
 }
@@ -180,7 +184,7 @@ const bindBuffers = (gl: WebGLRenderingContext, mesh: Mesh) => {
     bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
     bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
     bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
-    bindBuffer(gl, VaryingPosition.Joints, mesh.joints,);
+    bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
     bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
 
     const indexBuffer = gl.createBuffer();
@@ -191,7 +195,6 @@ const bindBuffers = (gl: WebGLRenderingContext, mesh: Mesh) => {
 const bindAnimation = (gl: WebGLRenderingContext, model: Model, uniforms: Uniforms) => {
     const ms = model.animation[1].time.data[model.animation[1].time.data.length - 1] * 1000;
     const i = Math.floor((performance.now() % ms) / ms * model.animation[1].time.data.length);
-
 
     const t = mat4.create();
     const rot = quat.fromValues(
@@ -206,10 +209,21 @@ const bindAnimation = (gl: WebGLRenderingContext, model: Model, uniforms: Unifor
         model.animation[0].buffer.data[i * model.animation[0].buffer.size + 2],
     );
 
-    mat4.fromQuat(t, rot);
     mat4.translate(t, t, trans);
-    gl.uniformMatrix4fv(uniforms.jointTransform, false, t);
+    mat4.fromQuat(t, rot);
+    applyNodes(gl, model.rootNode, t, uniforms);
 };
+
+const applyNodes = (gl: WebGLRenderingContext, node: Node, transform: mat4, uniforms: Uniforms) => {
+    if (node.matrix) {
+        const n = mat4.create();
+        mat4.multiply(n, node.matrix, transform);
+        mat4.invert(n, n);
+        gl.uniformMatrix4fv(uniforms.jointTransform[node.id], false, n);
+    }
+
+    if (node.children) node.children.forEach(c => applyNodes(gl, c, transform, uniforms));
+}
 
 export {
     loadModel,

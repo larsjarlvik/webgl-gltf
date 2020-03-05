@@ -12,7 +12,7 @@ layout (location=5) in vec4 weights;
 
 uniform mat4 pMatrix;
 uniform mat4 mvMatrix;
-uniform mat4 jointTransform;
+uniform mat4 jointTransform[MAX_JOINTS];
 
 out vec3 color;
 
@@ -21,10 +21,10 @@ void main() {
     vec4 totalNormal = vec4(0.0);
 
     for (int i = 0; i < MAX_WEIGHTS; i ++) {
-        totalLocalPos += jointTransform * position * weights[i];
-        totalNormal += jointTransform * vec4(normal, 0.0) * weights[i];
+        totalLocalPos += jointTransform[int(joints)] * position * weights[i];
+        totalNormal += jointTransform[int(joints)] * vec4(normal, 0.0) * weights[i];
     }
 
-    color = totalNormal.xyz;
+    color = weights.xyz;
     gl_Position = pMatrix * mvMatrix * totalLocalPos;
 }
