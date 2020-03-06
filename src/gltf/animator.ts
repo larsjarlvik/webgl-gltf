@@ -59,9 +59,9 @@ const getTransform = (keyFrames: KeyFrame[]) => {
 const update = (model: Model) => {
     const transforms: { [key: string]: mat4 } = {};
     Object.keys(model.channels).forEach(c => {
-        const translation = getTransform(model.channels[c].translation);
-        const rotation = getTransform(model.channels[c].rotation);
-        const scale = getTransform(model.channels[c].scale);
+        const translation = model.channels[c].translation.length > 0 ? getTransform(model.channels[c].translation) : vec3.create();
+        const rotation = model.channels[c].rotation.length > 0 ? getTransform(model.channels[c].rotation) : quat.create();
+        const scale = model.channels[c].scale.length > 0 ? getTransform(model.channels[c].scale) : vec3.fromValues(1, 1, 1);
 
         const localTransform = mat4.create();
         const rotTransform = mat4.create();
