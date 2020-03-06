@@ -21,19 +21,23 @@ interface Model {
     meshes: Mesh[];
     rootJoint: Joint;
     jointCount: number;
-    keyFrames: KeyFrame[];
+    channels: Node;
+}
+
+interface Node {
+    [key: string]: Channels;
+}
+
+interface Channels {
+    translation: KeyFrame[];
+    rotation: KeyFrame[];
+    scale: KeyFrame[];
 }
 
 interface KeyFrame {
     time: number;
-    node: number;
-    transform: JointTransform;
-}
-
-interface JointTransform {
-    position: vec3;
-    rotation: quat;
-    scale: vec3;
+    transform: vec3 | quat;
+    type: string;
 }
 
 interface Mesh {
@@ -108,13 +112,13 @@ const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Acces
 const loadJointHiearchy = (index: number, node: GlTfNode, nodes: GlTfNode[]): Joint => {
     const transform = mat4.create();
 
-    if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
+    if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
     if (node.rotation !== undefined) {
         const rotation = mat4.create();
         mat4.fromQuat(rotation, quat.fromValues(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]));
         mat4.multiply(transform, rotation, transform);
     }
-    if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
+    if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
 
     return {
         id: index,
@@ -155,40 +159,41 @@ const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[])
         };
     });
 
-    const keyFrames: KeyFrame[] = [];
-    for (let i = 0; i < channels[0].time.data.length; i ++) {
-        // TODO: Fix hardcoded channel positions
-        const position = vec3.fromValues(
-            channels[0].buffer.data[i * channels[0].buffer.size],
-            channels[0].buffer.data[i * channels[0].buffer.size + 1],
-            channels[0].buffer.data[i * channels[0].buffer.size + 2]
-        );
+    const c: Node = {};
 
-        const rotation = quat.fromValues(
-            channels[1].buffer.data[i * channels[1].buffer.size],
-            channels[1].buffer.data[i * channels[1].buffer.size + 1],
-            channels[1].buffer.data[i * channels[1].buffer.size + 2],
-            channels[1].buffer.data[i * channels[1].buffer.size + 3]
-        );
+    channels.forEach((channel) => {
+        if (!c[channel.node!]) {
+            c[channel.node!] = {
+                translation: [],
+                rotation: [],
+                scale: [],
+            };
+        }
 
-        const scale = vec3.fromValues(
-            channels[2].buffer.data[i * channels[2].buffer.size],
-            channels[2].buffer.data[i * channels[2].buffer.size + 1],
-            channels[2].buffer.data[i * channels[2].buffer.size + 2]
-        );
+        for (let i = 0; i < channel.time.data.length; i ++) {
+            const transform = channel.type === 'rotation'
+                ? quat.fromValues(
+                    channel.buffer.data[i * channel.buffer.size],
+                    channel.buffer.data[i * channel.buffer.size + 1],
+                    channel.buffer.data[i * channel.buffer.size + 2],
+                    channel.buffer.data[i * channel.buffer.size + 3]
+                )
+                : vec3.fromValues(
+                    channel.buffer.data[i * channel.buffer.size],
+                    channel.buffer.data[i * channel.buffer.size + 1],
+                    channel.buffer.data[i * channel.buffer.size + 2]
+                );
 
-        keyFrames.push({
-            time: channels[0].time.data[i],
-            node: channels[0].node!,
-            transform: {
-                position,
-                rotation,
-                scale,
-            },
-        })
-    }
+            c[channel.node!][channel.type].push({
+                time: channel.time.data[i],
+                transform: transform,
+                jointId: channel.node,
+                type: channel.type,
+            } as KeyFrame)
+        }
+    });
 
-    return keyFrames;
+    return c;
 };
 
 const loadModel = async (model: string) => {
@@ -220,7 +225,7 @@ const loadModel = async (model: string) => {
     });
 
     const rootJoint = gltf.nodes ? loadJointHiearchy(0, gltf.nodes[0], gltf.nodes) : null;
-    const keyFrames = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
+    const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
     let jointCount = 0;
 
     if (rootJoint != null) {
@@ -232,7 +237,7 @@ const loadModel = async (model: string) => {
         meshes,
         rootJoint,
         jointCount,
-        keyFrames,
+        channels,
     } as Model;
 };
 
@@ -269,6 +274,6 @@ export {
     Mesh,
     Model,
     KeyFrame,
-    JointTransform,
     Joint,
+    Channels,
 };
