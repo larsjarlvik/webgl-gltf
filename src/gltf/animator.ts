@@ -27,9 +27,7 @@ const applyPoseToJoints = (currentPose: { [key: string]: mat4 }, joint: Joint, p
     const currentTransform = mat4.create();
 
     if (currentPose[joint.id] !== undefined) {
-        const currentLocalTransform = mat4.create();
-        mat4.copy(currentLocalTransform, currentPose[joint.id])
-        mat4.multiply(currentTransform, parentTransform, currentLocalTransform);
+        mat4.multiply(currentTransform, parentTransform, currentPose[joint.id]);
     }
 
     joint.children.forEach(child => {
@@ -79,16 +77,19 @@ const update = (model: Model) => {
 
 const bindAnimation = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
     const jointMatrices: mat4[] = [];
-    addJointsToArray(model.rootJoint, jointMatrices);
+    addJointsToArray(0, model.rootJoint, jointMatrices);
 
     jointMatrices.forEach((mat, i) => {
         gl.uniformMatrix4fv(uniforms.jointTransform[i], false, mat);
     });
 };
 
-const addJointsToArray = (joint: Joint, jointMatrices: mat4[]) => {
-    jointMatrices[joint.id] = joint.animatedTransform;
-    joint.children.forEach(c => addJointsToArray(c, jointMatrices));
+const addJointsToArray = (n: number, joint: Joint, jointMatrices: mat4[]) => {
+    if (joint.isJoint) {
+        jointMatrices[n] = joint.animatedTransform;
+        n ++;
+    }
+    joint.children.forEach(c => addJointsToArray(n, c, jointMatrices));
 };
 
 export {

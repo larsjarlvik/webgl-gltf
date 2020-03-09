@@ -1,4 +1,4 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation } from 'types/gltf';
+import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Skin } from 'types/gltf';
 import { mat4, quat, vec3 } from 'gl-matrix';
 
 interface Buffer {
@@ -15,6 +15,7 @@ interface Joint {
     localBindTransform: mat4;
     animatedTransform: mat4;
     inverseBindTransform: mat4;
+    isJoint: boolean
 }
 
 interface Model {
@@ -109,7 +110,7 @@ const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Acces
     } as Buffer;
 };
 
-const loadJointHiearchy = (index: number, node: GlTfNode, nodes: GlTfNode[]): Joint => {
+const loadJointHierarchy = (index: number, node: GlTfNode, nodes: GlTfNode[], skins: Skin[]): Joint => {
     const transform = mat4.create();
 
     if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
@@ -120,13 +121,17 @@ const loadJointHiearchy = (index: number, node: GlTfNode, nodes: GlTfNode[]): Jo
     }
     if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
 
+
+    const isJoint = skins.filter(s => s.joints.indexOf(index) !== -1).length > 0;
+
     return {
         id: index,
         name: node.name,
-        children: node.children?.map(n => loadJointHiearchy(n, nodes[n], nodes)) || [],
+        children: node.children?.map(n => loadJointHierarchy(n, nodes[n], nodes, skins)) || [],
         localBindTransform: transform,
         animatedTransform: mat4.create(),
         inverseBindTransform: mat4.create(),
+        isJoint: isJoint,
     } as Joint;
 };
 
@@ -224,9 +229,11 @@ const loadModel = async (model: string) => {
         } as Mesh;
     });
 
-    const rootJoint = gltf.nodes ? loadJointHiearchy(0, gltf.nodes[0], gltf.nodes) : null;
+    const rootJoint = gltf.nodes ? loadJointHierarchy(0, gltf.nodes[0], gltf.nodes, gltf.skins!) : null;
     const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
     let jointCount = 0;
+
+
 
     if (rootJoint != null) {
         calculateInverseBindTransform(rootJoint, mat4.create());

@@ -3,7 +3,7 @@
 const int MAX_JOINTS = 50;
 const int MAX_WEIGHTS = 4;
 
-layout (location=0) in vec4 position;
+layout (location=0) in vec3 position;
 layout (location=1) in vec3 normal;
 layout (location=2) in vec4 tangent;
 layout (location=3) in vec2 texCoord;
@@ -21,7 +21,7 @@ void main() {
     vec4 totalNormal = vec4(0.0);
 
     for (int i = 0; i < MAX_WEIGHTS; i ++) {
-        totalLocalPos += jointTransform[int(joints)] * position * weights[i];
+        totalLocalPos += jointTransform[int(joints)] * vec4(position, 1.0) * weights[i];
         totalNormal += jointTransform[int(joints)] * vec4(normal, 0.0) * weights[i];
     }
 

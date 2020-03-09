@@ -50,6 +50,7 @@ const startup = async () => {
     shader.linkProgram(gl, program);
 
     const model = await loadModel('rigged');
+    console.log(model);
 
     bindBuffers(gl, model.meshes[0]);
     render(program, model);
