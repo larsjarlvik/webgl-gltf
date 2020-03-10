@@ -1,8 +1,8 @@
 import * as shader from 'shaders/shader-loader';
 import * as defaultShader from 'shaders/default-shader';
 import { initializeCamera } from 'camera';
-import { bindBuffers, Model, loadModel } from 'gltf/gltf';
-import { update, bindAnimation } from 'gltf/animator';
+import { bind, Model, loadModel } from 'gltf/gltf';
+import { update } from 'gltf/animator';
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
@@ -22,11 +22,11 @@ if (!gl) {
 const render = (program: WebGLProgram, model: Model) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    const uniforms = defaultShader.getUniformLocations(gl, program);
     const camera = initializeCamera(canvas.width, canvas.height);
+    const uniforms = defaultShader.getUniformLocations(gl, program);
 
-    update(model);
-    bindAnimation(gl, model, uniforms);
+    bind(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
+    update(gl, model, uniforms);
 
     gl.uniformMatrix4fv(uniforms.pMatrixLoc, false, camera.pMatrix);
     gl.uniformMatrix4fv(uniforms.mvMatrixLoc, false, camera.mvMatrix);
@@ -49,10 +49,9 @@ const startup = async () => {
     gl.attachShader(program, await shader.loadShader(gl, 'default.frag', gl.FRAGMENT_SHADER));
     shader.linkProgram(gl, program);
 
-    const model = await loadModel('rigged');
+    const model = await loadModel('cylinder');
     console.log(model);
 
-    bindBuffers(gl, model.meshes[0]);
     render(program, model);
 };
 

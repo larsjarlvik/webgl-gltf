@@ -1,5 +1,7 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Skin } from 'types/gltf';
+import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation } from 'types/gltf';
 import { mat4, quat, vec3 } from 'gl-matrix';
+import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
+import { Uniforms } from 'shaders/default-shader';
 
 interface Buffer {
     data: Float32Array | Int16Array;
@@ -8,28 +10,34 @@ interface Buffer {
     componentType: BufferType;
 }
 
-interface Joint {
+interface Node {
     id: number;
     name: string;
-    children: Joint[];
+    children: number[];
     localBindTransform: mat4;
-    animatedTransform: mat4;
-    inverseBindTransform: mat4;
-    isJoint: boolean
+    skin?: number;
+    mesh?: number;
+}
+
+interface Skin {
+    joints: number[];
+    inverseBindTransforms: mat4[];
+    skeleton: number;
 }
 
 interface Model {
     meshes: Mesh[];
-    rootJoint: Joint;
-    jointCount: number;
-    channels: Node;
+    nodes: Node[];
+    rootNode: number;
+    channels: Channel;
+    skins: Skin[]
 }
 
-interface Node {
-    [key: string]: Channels;
+interface Channel {
+    [key: number]: Transform;
 }
 
-interface Channels {
+interface Transform {
     translation: KeyFrame[];
     rotation: KeyFrame[];
     scale: KeyFrame[];
@@ -61,12 +69,6 @@ enum VaryingPosition {
     Weights = 5,
 };
 
-const getBuffer = async (model: string, buffer: string) => {
-    const response = await fetch(`/models/${model}/${buffer}`);
-    const blob = await response.blob();
-    return await (<any>blob).arrayBuffer() as ArrayBuffer;
-};
-
 enum BufferType {
     Float = 5126,
     Short = 5123,
@@ -80,6 +82,12 @@ const accessorSizes = {
     'MAT2': 4,
     'MAT3': 9,
     'MAT4': 16
+};
+
+const getBuffer = async (model: string, buffer: string) => {
+    const response = await fetch(`/models/${model}/${buffer}`);
+    const blob = await response.blob();
+    return await (<any>blob).arrayBuffer() as ArrayBuffer;
 };
 
 const getArrayFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
@@ -110,43 +118,23 @@ const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Acces
     } as Buffer;
 };
 
-const loadJointHierarchy = (index: number, node: GlTfNode, nodes: GlTfNode[], skins: Skin[]): Joint => {
+const loadNodes = (index: number, node: GlTfNode): Node => {
     const transform = mat4.create();
 
     if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
-    if (node.rotation !== undefined) {
-        const rotation = mat4.create();
-        mat4.fromQuat(rotation, quat.fromValues(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]));
-        mat4.multiply(transform, rotation, transform);
-    }
+    if (node.rotation !== undefined) applyRotationFromQuat(transform, node.rotation);
     if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
-
-
-    const isJoint = skins.filter(s => s.joints.indexOf(index) !== -1).length > 0;
+    if (node.matrix !== undefined) mat4.copy(transform, createMat4FromArray(node.matrix));
 
     return {
         id: index,
         name: node.name,
-        children: node.children?.map(n => loadJointHierarchy(n, nodes[n], nodes, skins)) || [],
+        children: node.children || [],
         localBindTransform: transform,
         animatedTransform: mat4.create(),
-        inverseBindTransform: mat4.create(),
-        isJoint: isJoint,
-    } as Joint;
-};
-
-const countJoints = (index: number, nodes: GlTfNode[]) => {
-    const count = nodes[index].children?.reduce((n, c) => n + countJoints(c, nodes), 0) || 0;
-    return count + 1;
-}
-
-const calculateInverseBindTransform = (current: Joint, parentBindTransform: mat4) => {
-    const bindTransform = mat4.create();
-    mat4.multiply(bindTransform, parentBindTransform, current.localBindTransform);
-    mat4.invert(bindTransform, bindTransform);
-    current.inverseBindTransform = bindTransform;
-
-    current.children.forEach(c => calculateInverseBindTransform(c, bindTransform));
+        skin: node.skin,
+        mesh: node.mesh
+    } as Node;
 };
 
 const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[]) => {
@@ -164,10 +152,9 @@ const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[])
         };
     });
 
-    const c: Node = {};
-
+    const c: Channel = {};
     channels.forEach((channel) => {
-        if (!c[channel.node!]) {
+        if (c[channel.node!] === undefined) {
             c[channel.node!] = {
                 translation: [],
                 rotation: [],
@@ -229,22 +216,29 @@ const loadModel = async (model: string) => {
         } as Mesh;
     });
 
-    const rootJoint = gltf.nodes ? loadJointHierarchy(0, gltf.nodes[0], gltf.nodes, gltf.skins!) : null;
+
+    const scene = gltf.scenes![gltf.scene || 0];
+    const rootNode = scene.nodes![0];
+    const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
     const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
-    let jointCount = 0;
 
+    const skins = gltf.skins ? gltf.skins.map(x => {
+        const bindTransforms = readArrayFromBuffer(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
+        const inverseBindTransforms = x.joints.map((_, i) => createMat4FromArray(bindTransforms.data.slice(i * 16, i * 16 + 16)));
 
-
-    if (rootJoint != null) {
-        calculateInverseBindTransform(rootJoint, mat4.create());
-        jointCount = countJoints(0, gltf.nodes!);
-    }
+        return {
+            joints: x.joints,
+            inverseBindTransforms,
+            skeleton: x.skeleton,
+        };
+    }) : [] as Skin[];
 
     return {
         meshes,
-        rootJoint,
-        jointCount,
+        nodes,
+        rootNode,
         channels,
+        skins,
     } as Model;
 };
 
@@ -262,25 +256,35 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
     return buffer;
 };
 
-const bindBuffers = (gl: WebGLRenderingContext, mesh: Mesh) => {
-    bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
-    bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
-    bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
-    bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
-    bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
-    bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
+const bind = (gl: WebGLRenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
+    const t = mat4.create();
+    mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
-    const indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
+    if (model.nodes[node].mesh !== undefined) {
+        const mesh = model.meshes[model.nodes[node].mesh!];
+
+        bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
+        bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
+        bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
+        bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
+        bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
+        bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
+
+        gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
+    }
+
+    model.nodes[node].children.forEach(c => {
+        bind(gl, model, c, transform, uniforms);
+    });
 };
 
 export {
     loadModel,
-    bindBuffers,
-    Mesh,
+    bind,
     Model,
     KeyFrame,
-    Joint,
-    Channels,
 };

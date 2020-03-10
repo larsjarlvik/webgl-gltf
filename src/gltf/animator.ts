@@ -1,5 +1,4 @@
-import { Model, KeyFrame, Joint } from './gltf';
-import { interpolateVec3, interpolateQuat } from 'utils/interpolate';
+import { Model, KeyFrame } from './gltf';
 import { mat4, vec3, quat } from 'gl-matrix';
 import { Uniforms } from 'shaders/default-shader';
 
@@ -23,21 +22,6 @@ const calculateProgression = (previous: KeyFrame, next: KeyFrame, animationTime:
     return currentTime / (next.time - previous.time);
 };
 
-const applyPoseToJoints = (currentPose: { [key: string]: mat4 }, joint: Joint, parentTransform: mat4) => {
-    const currentTransform = mat4.create();
-
-    if (currentPose[joint.id] !== undefined) {
-        mat4.multiply(currentTransform, parentTransform, currentPose[joint.id]);
-    }
-
-    joint.children.forEach(child => {
-        applyPoseToJoints(currentPose, child, currentTransform);
-    });
-
-    mat4.multiply(currentTransform, joint.inverseBindTransform, currentTransform);
-    joint.animatedTransform = currentTransform;
-};
-
 const getTransform = (keyFrames: KeyFrame[]) => {
     const animationTime = performance.now() / 1000.0 % keyFrames[keyFrames.length - 1].time;
     const frames = getPreviousAndNextKeyFrame(keyFrames, animationTime);
@@ -45,17 +29,25 @@ const getTransform = (keyFrames: KeyFrame[]) => {
 
     switch(frames.previous.type) {
         case 'translation':
-        case 'scale':
-            return interpolateVec3(frames.previous.transform as vec3, frames.next.transform as vec3, progression);
-        case 'rotation':
-            return interpolateQuat(frames.previous.transform as quat, frames.next.transform as quat, progression);
+        case 'scale': {
+            const result = vec3.create();
+            vec3.lerp(result, frames.previous.transform as vec3, frames.next.transform as vec3, progression);
+            return result;
+        }
+        case 'rotation': {
+            const result = quat.create();
+            quat.slerp(result, frames.previous.transform as quat, frames.next.transform as quat, progression);
+            return result;
+        }
         default:
             throw new Error('Unknown type!');
     }
 };
 
-const update = (model: Model) => {
-    const transforms: { [key: string]: mat4 } = {};
+const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
+    if (!model.channels) return;
+
+    const transforms: { [key: number]: mat4 } = {};
     Object.keys(model.channels).forEach(c => {
         const translation = model.channels[c].translation.length > 0 ? getTransform(model.channels[c].translation) : vec3.create();
         const rotation = model.channels[c].rotation.length > 0 ? getTransform(model.channels[c].rotation) : quat.create();
@@ -72,27 +64,20 @@ const update = (model: Model) => {
         transforms[c] = localTransform;
     });
 
-    applyPoseToJoints(transforms, model.rootJoint, mat4.create());
-};
+    model.skins.forEach(s => {
+        const currentTransform = mat4.create();
+        s.joints.forEach((j, i) => {
+            if (transforms[model.nodes[j].id] !== undefined) {
+                mat4.multiply(currentTransform, currentTransform, transforms[model.nodes[j].id]);
+            }
 
-const bindAnimation = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
-    const jointMatrices: mat4[] = [];
-    addJointsToArray(0, model.rootJoint, jointMatrices);
-
-    jointMatrices.forEach((mat, i) => {
-        gl.uniformMatrix4fv(uniforms.jointTransform[i], false, mat);
+            const animatedTransform = mat4.create();
+            mat4.multiply(animatedTransform, currentTransform, s.inverseBindTransforms[i]);
+            gl.uniformMatrix4fv(uniforms.jointTransform[i], false, animatedTransform);
+        });
     });
-};
-
-const addJointsToArray = (n: number, joint: Joint, jointMatrices: mat4[]) => {
-    if (joint.isJoint) {
-        jointMatrices[n] = joint.animatedTransform;
-        n ++;
-    }
-    joint.children.forEach(c => addJointsToArray(n, c, jointMatrices));
 };
 
 export {
     update,
-    bindAnimation,
 };

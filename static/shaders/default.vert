@@ -1,8 +1,5 @@
 #version 300 es
 
-const int MAX_JOINTS = 50;
-const int MAX_WEIGHTS = 4;
-
 layout (location=0) in vec3 position;
 layout (location=1) in vec3 normal;
 layout (location=2) in vec4 tangent;
@@ -12,19 +9,21 @@ layout (location=5) in vec4 weights;
 
 uniform mat4 pMatrix;
 uniform mat4 mvMatrix;
-uniform mat4 jointTransform[MAX_JOINTS];
+uniform mat4 jointTransform[50];
+uniform mat4 mMatrix;
 
 out vec3 color;
 
 void main() {
-    vec4 totalLocalPos = vec4(0.0);
-    vec4 totalNormal = vec4(0.0);
+    vec4 totalLocalPos = vec4(position, 1.0);
+    vec4 totalNormal = vec4(normal, 0.0);
 
-    for (int i = 0; i < MAX_WEIGHTS; i ++) {
-        totalLocalPos += jointTransform[int(joints)] * vec4(position, 1.0) * weights[i];
-        totalNormal += jointTransform[int(joints)] * vec4(normal, 0.0) * weights[i];
-    }
+    mat4 skinMatrix =
+        weights.x * jointTransform[int(joints.x)] +
+        weights.y * jointTransform[int(joints.y)] +
+        weights.z * jointTransform[int(joints.z)] +
+        weights.w * jointTransform[int(joints.w)];
 
     color = totalNormal.xyz;
-    gl_Position = pMatrix * mvMatrix * totalLocalPos;
+    gl_Position = pMatrix * mvMatrix * mMatrix * skinMatrix * totalLocalPos;
 }
