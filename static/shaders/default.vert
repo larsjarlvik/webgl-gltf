@@ -11,6 +11,7 @@ uniform mat4 pMatrix;
 uniform mat4 mvMatrix;
 uniform mat4 jointTransform[50];
 uniform mat4 mMatrix;
+uniform int isAnimated;
 
 out vec3 color;
 
@@ -18,11 +19,13 @@ void main() {
     vec4 totalLocalPos = vec4(position, 1.0);
     vec4 totalNormal = vec4(normal, 0.0);
 
-    mat4 skinMatrix =
-        weights.x * jointTransform[int(joints.x)] +
-        weights.y * jointTransform[int(joints.y)] +
-        weights.z * jointTransform[int(joints.z)] +
-        weights.w * jointTransform[int(joints.w)];
+    mat4 skinMatrix = mat4(1.0);
+    if (isAnimated == 1) {
+        skinMatrix = weights.x * jointTransform[int(joints.x)] +
+            weights.y * jointTransform[int(joints.y)] +
+            weights.z * jointTransform[int(joints.z)] +
+            weights.w * jointTransform[int(joints.w)];
+    }
 
     color = vec3(skinMatrix * totalNormal);
     gl_Position = pMatrix * mvMatrix * mMatrix * skinMatrix * totalLocalPos;

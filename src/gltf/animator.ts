@@ -69,7 +69,10 @@ const applyTransforms = (gl: WebGL2RenderingContext, target: WebGLUniformLocatio
 };
 
 const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
-    if (!model.channels) return;
+    if (!model.channels) {
+        gl.uniform1i(uniforms.isAnimated, 0);
+        return;
+    }
 
     const transforms: { [key: number]: mat4 } = {};
     Object.keys(model.channels).forEach(c => {
@@ -92,6 +95,8 @@ const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) =>
         const root = skin.skeleton !== undefined ? skin.skeleton : skin.joints[0];
         applyTransforms(gl, uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
     });
+
+    gl.uniform1i(uniforms.isAnimated, 1);
 };
 
 export {
