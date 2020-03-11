@@ -49,7 +49,7 @@ const startup = async () => {
     gl.attachShader(program, await shader.loadShader(gl, 'default.frag', gl.FRAGMENT_SHADER));
     shader.linkProgram(gl, program);
 
-    const model = await loadModel('cylinder');
+    const model = await loadModel('cesium');
     console.log(model);
 
     render(program, model);

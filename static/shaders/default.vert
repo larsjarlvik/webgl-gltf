@@ -24,6 +24,6 @@ void main() {
         weights.z * jointTransform[int(joints.z)] +
         weights.w * jointTransform[int(joints.w)];
 
-    color = totalNormal.xyz;
+    color = vec3(skinMatrix * totalNormal);
     gl_Position = pMatrix * mvMatrix * mMatrix * skinMatrix * totalLocalPos;
 }

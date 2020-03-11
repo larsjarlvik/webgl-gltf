@@ -287,4 +287,5 @@ export {
     bind,
     Model,
     KeyFrame,
+    Skin,
 };

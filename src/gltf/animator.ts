@@ -1,4 +1,4 @@
-import { Model, KeyFrame } from './gltf';
+import { Model, KeyFrame, Skin } from './gltf';
 import { mat4, vec3, quat } from 'gl-matrix';
 import { Uniforms } from 'shaders/default-shader';
 
@@ -44,6 +44,30 @@ const getTransform = (keyFrames: KeyFrame[]) => {
     }
 };
 
+interface Transform {
+    [key: number]: mat4;
+}
+
+const applyTransforms = (gl: WebGL2RenderingContext, target: WebGLUniformLocation[], model: Model, transforms: Transform, matrix: mat4, skin: Skin, nodeIndex: number) => {
+    const node = model.nodes[nodeIndex];
+
+    if (transforms[node.id] !== undefined) {
+        mat4.multiply(matrix, matrix, transforms[node.id]);
+    }
+
+    const animatedTransform = mat4.create();
+    const transformIndex = skin.joints.indexOf(node.id);
+
+    mat4.multiply(animatedTransform, matrix, skin.inverseBindTransforms[transformIndex]);
+    gl.uniformMatrix4fv(target[transformIndex], false, animatedTransform);
+
+    node.children.forEach(childNode => {
+        const childTransform = mat4.create();
+        mat4.copy(childTransform, matrix);
+        applyTransforms(gl, target, model, transforms, childTransform, skin, childNode);
+    });
+};
+
 const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
     if (!model.channels) return;
 
@@ -64,17 +88,9 @@ const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) =>
         transforms[c] = localTransform;
     });
 
-    model.skins.forEach(s => {
-        const currentTransform = mat4.create();
-        s.joints.forEach((j, i) => {
-            if (transforms[model.nodes[j].id] !== undefined) {
-                mat4.multiply(currentTransform, currentTransform, transforms[model.nodes[j].id]);
-            }
-
-            const animatedTransform = mat4.create();
-            mat4.multiply(animatedTransform, currentTransform, s.inverseBindTransforms[i]);
-            gl.uniformMatrix4fv(uniforms.jointTransform[i], false, animatedTransform);
-        });
+    model.skins.forEach(skin => {
+        const root = skin.skeleton !== undefined ? skin.skeleton : skin.joints[0];
+        applyTransforms(gl, uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
     });
 };
 
