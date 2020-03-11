@@ -14,6 +14,7 @@ uniform mat4 mMatrix;
 uniform int isAnimated;
 
 out vec3 color;
+out vec2 texCoords;
 
 void main() {
     vec4 totalLocalPos = vec4(position, 1.0);
@@ -27,6 +28,7 @@ void main() {
             weights.w * jointTransform[int(joints.w)];
     }
 
+    texCoords = texCoord;
     color = vec3(skinMatrix * totalNormal);
     gl_Position = pMatrix * mvMatrix * mMatrix * skinMatrix * totalLocalPos;
 }

@@ -1,64 +1,8 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation } from 'types/gltf';
+import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Material, Image } from 'types/gltf';
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
 import { Uniforms } from 'shaders/default-shader';
-
-interface Buffer {
-    data: Float32Array | Int16Array;
-    size: number;
-    type: string;
-    componentType: BufferType;
-}
-
-interface Node {
-    id: number;
-    name: string;
-    children: number[];
-    localBindTransform: mat4;
-    skin?: number;
-    mesh?: number;
-}
-
-interface Skin {
-    joints: number[];
-    inverseBindTransforms: mat4[];
-    skeleton: number;
-}
-
-interface Model {
-    meshes: Mesh[];
-    nodes: Node[];
-    rootNode: number;
-    channels: Channel;
-    skins: Skin[]
-}
-
-interface Channel {
-    [key: number]: Transform;
-}
-
-interface Transform {
-    translation: KeyFrame[];
-    rotation: KeyFrame[];
-    scale: KeyFrame[];
-}
-
-interface KeyFrame {
-    time: number;
-    transform: vec3 | quat;
-    type: string;
-}
-
-interface Mesh {
-    elements: number;
-    indices: Int16Array;
-    positions: Buffer;
-    normals: Buffer | null;
-    tangents: Buffer | null;
-    texCoord: Buffer | null;
-    joints: Buffer | null;
-    weights: Buffer | null;
-}
+import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin } from './parsedMesh';
 
 enum VaryingPosition {
     Positions = 0,
@@ -67,11 +11,6 @@ enum VaryingPosition {
     TexCoord = 3,
     Joints = 4,
     Weights = 5,
-};
-
-enum BufferType {
-    Float = 5126,
-    Short = 5123,
 };
 
 const accessorSizes = {
@@ -88,6 +27,23 @@ const getBuffer = async (model: string, buffer: string) => {
     const response = await fetch(`/models/${model}/${buffer}`);
     const blob = await response.blob();
     return await (<any>blob).arrayBuffer() as ArrayBuffer;
+};
+
+const getTexture = async (gl: WebGL2RenderingContext, model: string, uri: string) => {
+    return new Promise<WebGLTexture>(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            resolve(texture!);
+        }
+        img.src = `/models/${model}/${uri}`;
+    });
 };
 
 const getArrayFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
@@ -140,7 +96,6 @@ const loadNodes = (index: number, node: GlTfNode): Node => {
 const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[]) => {
     const channels = animation.channels.map(c => {
         const sampler = animation.samplers[c.sampler];
-
         const time = readArrayFromBuffer(gltf, buffers, gltf.accessors![sampler.input]);
         const buffer = readArrayFromBuffer(gltf, buffers, gltf.accessors![sampler.output]);
 
@@ -188,7 +143,44 @@ const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[])
     return c;
 };
 
-const loadModel = async (model: string) => {
+const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
+    const indexBuffer = gltf.bufferViews![mesh.primitives[0].indices!];
+    const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
+
+    return {
+        indices,
+        elements: indices.length,
+        positions: getArrayFromName(gltf, buffers, mesh, 'POSITION'),
+        normals: getArrayFromName(gltf, buffers, mesh, 'NORMAL'),
+        tangents: getArrayFromName(gltf, buffers, mesh, 'TANGENT'),
+        texCoord: getArrayFromName(gltf, buffers, mesh, 'TEXCOORD_0'),
+        joints: getArrayFromName(gltf, buffers, mesh, 'JOINTS_0'),
+        weights: getArrayFromName(gltf, buffers, mesh, 'WEIGHTS_0'),
+        material: mesh.primitives[0].material,
+    } as Mesh;
+};
+
+const loadMaterial = async (gl: WebGL2RenderingContext, material: Material, model: string, images?: Image[]) : Promise<Material> => {
+    let baseColorTexture, roughnessTexture;
+
+    if (material.pbrMetallicRoughness) {
+        if (material.pbrMetallicRoughness.baseColorTexture) {
+            const uri = images![material.pbrMetallicRoughness.baseColorTexture.index].uri!;
+            baseColorTexture = await getTexture(gl, model, uri);
+        }
+        if (material.pbrMetallicRoughness.metallicRoughnessTexture) {
+            const uri = images![material.pbrMetallicRoughness.metallicRoughnessTexture.index].uri!;
+            roughnessTexture = await getTexture(gl, model, uri);
+        }
+    }
+
+    return {
+        baseColorTexture,
+        roughnessTexture,
+    }
+};
+
+const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
     const response = await fetch(`/models/${model}/${model}.gltf`);
     const gltf = await response.json() as GlTf;
 
@@ -200,24 +192,10 @@ const loadModel = async (model: string) => {
         gltf.buffers!.map(async (b) => await getBuffer(model, b.uri!)
     ));
 
-    const meshes = gltf.meshes!.map(m => {
-        const indexBuffer = gltf.bufferViews![m.primitives[0].indices!];
-        const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
-
-        return {
-            indices,
-            elements: indices.length,
-            positions: getArrayFromName(gltf, buffers, m, 'POSITION'),
-            normals: getArrayFromName(gltf, buffers, m, 'NORMAL'),
-            tangents: getArrayFromName(gltf, buffers, m, 'TANGENT'),
-            texCoord: getArrayFromName(gltf, buffers, m, 'TEXCOORD_0'),
-            joints: getArrayFromName(gltf, buffers, m, 'JOINTS_0'),
-            weights: getArrayFromName(gltf, buffers, m, 'WEIGHTS_0'),
-        } as Mesh;
-    });
-
-
     const scene = gltf.scenes![gltf.scene || 0];
+    const meshes = gltf.meshes!.map(m => loadMesh(gltf, buffers, m));
+    const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(gl, m, model, gltf.images))) : [];
+
     const rootNode = scene.nodes![0];
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
     const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
@@ -239,6 +217,7 @@ const loadModel = async (model: string) => {
         rootNode,
         channels,
         skins,
+        materials,
     } as Model;
 };
 
@@ -256,12 +235,28 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
     return buffer;
 };
 
-const bind = (gl: WebGLRenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
+const applyTexture = (gl: WebGL2RenderingContext, uniforms: Uniforms, texture: WebGLTexture, target: number) => {
+    if (texture) {
+        gl.activeTexture(target);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(uniforms.baseColorTexture, 0);
+        gl.uniform1i(uniforms.hasBaseColorTexture, 1);
+    } else {
+        gl.uniform1i(uniforms.hasBaseColorTexture, 0);
+    }
+}
+
+const bind = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
     if (model.nodes[node].mesh !== undefined) {
         const mesh = model.meshes[model.nodes[node].mesh!];
+        const material = model.materials[mesh.material];
+
+        if (material) {
+            applyTexture(gl, uniforms, material.baseColorTexture, gl.TEXTURE0);
+        }
 
         bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
         bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
@@ -285,7 +280,4 @@ const bind = (gl: WebGLRenderingContext, model: Model, node: number, transform: 
 export {
     loadModel,
     bind,
-    Model,
-    KeyFrame,
-    Skin,
 };

@@ -1,4 +1,4 @@
-import { Model, KeyFrame, Skin } from './gltf';
+import { Model, KeyFrame, Skin } from './parsedMesh';
 import { mat4, vec3, quat } from 'gl-matrix';
 import { Uniforms } from 'shaders/default-shader';
 
