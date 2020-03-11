@@ -13,7 +13,6 @@ uniform mat4 jointTransform[50];
 uniform mat4 mMatrix;
 uniform int isAnimated;
 
-out vec3 color;
 out vec2 texCoords;
 
 void main() {
@@ -29,6 +28,5 @@ void main() {
     }
 
     texCoords = texCoord;
-    color = vec3(skinMatrix * totalNormal);
     gl_Position = pMatrix * mvMatrix * mMatrix * skinMatrix * totalLocalPos;
 }

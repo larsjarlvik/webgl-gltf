@@ -1,4 +1,4 @@
-import { mat4, vec3, quat } from 'gl-matrix';
+import { mat4, vec3, quat, vec4 } from 'gl-matrix';
 
 export interface Buffer {
     data: Float32Array | Int16Array;
@@ -65,6 +65,8 @@ export interface Mesh {
 }
 
 export interface Material {
-    baseColorTexture: WebGLTexture;
-    roughnessTexture: WebGLTexture;
+    baseColorTexture: WebGLTexture | null;
+    roughnessTexture: WebGLTexture | null;
+    baseColor: vec4;
+    roughness: number;
 }

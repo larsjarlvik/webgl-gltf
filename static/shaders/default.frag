@@ -3,15 +3,16 @@ precision highp float;
 
 uniform sampler2D baseColorTexture;
 uniform int hasBaseColorTexture;
+uniform vec4 baseColor;
 
 in vec2 texCoords;
-in vec3 color;
 
 out vec4 fragColor;
 
 void main() {
-    fragColor = vec4(color, 1.0);
     if (hasBaseColorTexture == 1) {
         fragColor = texture(baseColorTexture, texCoords);
+    } else {
+        fragColor = baseColor;
     }
 }

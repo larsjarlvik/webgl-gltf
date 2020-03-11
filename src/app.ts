@@ -2,8 +2,9 @@ import * as shader from 'shaders/shader-loader';
 import * as defaultShader from 'shaders/default-shader';
 import { initializeCamera } from 'camera';
 import { Model } from 'gltf/parsedMesh';
-import { bind, loadModel } from 'gltf/gltf';
+import { loadModel } from 'gltf/gltf';
 import { update } from 'gltf/animator';
+import { bind } from 'gltf/renderer';
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
@@ -48,7 +49,7 @@ const startup = async () => {
     gl.attachShader(program, await shader.loadShader(gl, 'default.frag', gl.FRAGMENT_SHADER));
     shader.linkProgram(gl, program);
 
-    const model = await loadModel(gl, 'cesium');
+    const model = await loadModel(gl, 'suzanne');
     console.log(model);
 
     render(program, model);

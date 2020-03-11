@@ -1,17 +1,8 @@
 import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Material, Image } from 'types/gltf';
-import { mat4, quat, vec3 } from 'gl-matrix';
+import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
-import { Uniforms } from 'shaders/default-shader';
 import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin } from './parsedMesh';
 
-enum VaryingPosition {
-    Positions = 0,
-    Normal = 1,
-    Tangent = 2,
-    TexCoord = 3,
-    Joints = 4,
-    Weights = 5,
-};
 
 const accessorSizes = {
     'SCALAR': 1,
@@ -161,22 +152,34 @@ const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
 };
 
 const loadMaterial = async (gl: WebGL2RenderingContext, material: Material, model: string, images?: Image[]) : Promise<Material> => {
-    let baseColorTexture, roughnessTexture;
+    let baseColorTexture: WebGLTexture | null = null;
+    let roughnessTexture: WebGLTexture | null = null;
+    let baseColor: vec4 = vec4.create();
+    let roughness: number = 0.0;
 
-    if (material.pbrMetallicRoughness) {
-        if (material.pbrMetallicRoughness.baseColorTexture) {
-            const uri = images![material.pbrMetallicRoughness.baseColorTexture.index].uri!;
+    const pbr = material.pbrMetallicRoughness;
+    if (pbr) {
+        if (pbr.baseColorTexture) {
+            const uri = images![pbr.baseColorTexture.index].uri!;
             baseColorTexture = await getTexture(gl, model, uri);
         }
-        if (material.pbrMetallicRoughness.metallicRoughnessTexture) {
-            const uri = images![material.pbrMetallicRoughness.metallicRoughnessTexture.index].uri!;
+        if (pbr.metallicRoughnessTexture) {
+            const uri = images![pbr.metallicRoughnessTexture.index].uri!;
             roughnessTexture = await getTexture(gl, model, uri);
         }
+
+        baseColor = pbr.baseColorFactor
+            ? vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3])
+            : vec4.create();
+
+        roughness = pbr.roughnessFactor ? pbr.roughnessFactor[0] : 0.0;
     }
 
     return {
         baseColorTexture,
         roughnessTexture,
+        baseColor,
+        roughness,
     }
 };
 
@@ -221,63 +224,6 @@ const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
     } as Model;
 };
 
-const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBuffer: Buffer | null) => {
-    if (gltfBuffer === null) return;
-
-    const type = gltfBuffer.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT;
-
-    const buffer = gl.createBuffer();
-    gl.enableVertexAttribArray(position);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, gltfBuffer.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(position, gltfBuffer.size, type, false, 0, 0);
-
-    return buffer;
-};
-
-const applyTexture = (gl: WebGL2RenderingContext, uniforms: Uniforms, texture: WebGLTexture, target: number) => {
-    if (texture) {
-        gl.activeTexture(target);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(uniforms.baseColorTexture, 0);
-        gl.uniform1i(uniforms.hasBaseColorTexture, 1);
-    } else {
-        gl.uniform1i(uniforms.hasBaseColorTexture, 0);
-    }
-}
-
-const bind = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
-    const t = mat4.create();
-    mat4.multiply(t, transform, model.nodes[node].localBindTransform);
-
-    if (model.nodes[node].mesh !== undefined) {
-        const mesh = model.meshes[model.nodes[node].mesh!];
-        const material = model.materials[mesh.material];
-
-        if (material) {
-            applyTexture(gl, uniforms, material.baseColorTexture, gl.TEXTURE0);
-        }
-
-        bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
-        bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
-        bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
-        bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
-        bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
-        bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
-
-        const indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
-
-        gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
-    }
-
-    model.nodes[node].children.forEach(c => {
-        bind(gl, model, c, transform, uniforms);
-    });
-};
-
 export {
     loadModel,
-    bind,
 };
