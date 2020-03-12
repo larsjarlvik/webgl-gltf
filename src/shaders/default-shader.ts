@@ -13,19 +13,21 @@ export interface Uniforms {
 }
 
 const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : Uniforms => {
-    const pMatrixLoc = gl.getUniformLocation(program, 'pMatrix')!;
-    const mvMatrixLoc = gl.getUniformLocation(program, 'mvMatrix')!;
-    const mMatrix = gl.getUniformLocation(program, 'mMatrix')!;
-    const hasBaseColorTexture = gl.getUniformLocation(program, 'hasBaseColorTexture')!;
-    const baseColorTexture = gl.getUniformLocation(program, 'baseColorTexture')!;
-    const hasRoughnessTexture = gl.getUniformLocation(program, 'hasRoughnessTexture')!;
-    const roughnessTexture = gl.getUniformLocation(program, 'roughnessTexture')!;
-    const baseColor = gl.getUniformLocation(program, 'baseColor')!;
-    const roughness = gl.getUniformLocation(program, 'roughness')!;
-    const isAnimated = gl.getUniformLocation(program, 'isAnimated')!;
+    const pMatrixLoc = gl.getUniformLocation(program, 'uProjectionMatrix')!;
+    const mvMatrixLoc = gl.getUniformLocation(program, 'uModelViewMatrix')!;
+    const mMatrix = gl.getUniformLocation(program, 'uMeshMatrix')!;
+    const isAnimated = gl.getUniformLocation(program, 'uIsAnimated')!;
+
+    const hasBaseColorTexture = gl.getUniformLocation(program, 'uHasBaseColorTexture')!;
+    const baseColorTexture = gl.getUniformLocation(program, 'uBaseColorTexture')!;
+    const hasRoughnessTexture = gl.getUniformLocation(program, 'uHasRoughnessTexture')!;
+    const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
+    const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
+    const roughness = gl.getUniformLocation(program, 'uRoughness')!;
+
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
-        jointTransform[i] = gl.getUniformLocation(program, `jointTransform[${i}]`)!
+        jointTransform[i] = gl.getUniformLocation(program, `uJointTransform[${i}]`)!
     }
 
     return {

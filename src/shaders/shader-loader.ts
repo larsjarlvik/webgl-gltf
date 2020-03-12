@@ -10,6 +10,7 @@ const loadShader = async (gl: WebGL2RenderingContext, name: string, type: number
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(`Failed to load shader ${name}`);
         console.error(gl.getShaderInfoLog(shader));
     }
 
