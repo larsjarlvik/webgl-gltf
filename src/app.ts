@@ -4,7 +4,7 @@ import { initializeCamera } from 'camera';
 import { Model } from 'gltf/parsedMesh';
 import { loadModel } from 'gltf/gltf';
 import { update } from 'gltf/animator';
-import { bind } from 'gltf/renderer';
+import { renderModel } from 'gltf/renderer';
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
@@ -25,12 +25,11 @@ const render = (program: WebGLProgram, model: Model) => {
     const camera = initializeCamera(canvas.width, canvas.height);
     const uniforms = defaultShader.getUniformLocations(gl, program);
 
-    bind(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
-    update(gl, model, uniforms);
-
     gl.uniformMatrix4fv(uniforms.pMatrix, false, camera.pMatrix);
     gl.uniformMatrix4fv(uniforms.vMatrix, false, camera.vMatrix);
-    gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);
+
+    update(gl, model, uniforms);
+    renderModel(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
 
     requestAnimationFrame(() => {
         render(program, model);

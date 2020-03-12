@@ -26,7 +26,6 @@ const getTexture = async (gl: WebGL2RenderingContext, model: string, uri: string
         img.onload = () => {
             const texture = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -135,7 +134,7 @@ const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[])
 };
 
 const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
-    const indexBuffer = gltf.bufferViews![mesh.primitives[0].indices!];
+    const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
     const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
 
     return {

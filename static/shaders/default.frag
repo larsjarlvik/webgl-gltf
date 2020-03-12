@@ -64,7 +64,7 @@ void main() {
 
     float roughness = uRoughness;
     if (uHasRoughnessTexture == 1) {
-        float roughness = texture(uRoughnessTexture, texCoord).g;
+        roughness = texture(uRoughnessTexture, texCoord).g;
     }
 
     vec3 light = pow(calculateLight(roughness), vec3(1.0 / 2.2));

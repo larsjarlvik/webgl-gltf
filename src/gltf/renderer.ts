@@ -27,16 +27,16 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
 
 const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform: WebGLUniformLocation) => {
     if (texture) {
-        gl.activeTexture(textureTarget);
+        gl.activeTexture(gl.TEXTURE0 + textureTarget);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(textureUniform, 0);
+        gl.uniform1i(textureUniform, textureTarget);
         gl.uniform1i(enabledUniform, 1);
     } else {
         gl.uniform1i(enabledUniform, 0);
     }
 }
 
-const bind = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
+const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
@@ -45,8 +45,8 @@ const bind = (gl: WebGL2RenderingContext, model: Model, node: number, transform:
         const material = model.materials[mesh.material];
 
         if (material) {
-            if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, gl.TEXTURE0, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
-            if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, gl.TEXTURE1, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
+            if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, 0, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
+            if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, 1, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
             if (material.baseColor) gl.uniform4f(uniforms.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
             if (material.roughness) gl.uniform1f(uniforms.roughness, material.roughness);
         }
@@ -62,13 +62,15 @@ const bind = (gl: WebGL2RenderingContext, model: Model, node: number, transform:
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
         gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
+
+        gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);
     }
 
     model.nodes[node].children.forEach(c => {
-        bind(gl, model, c, transform, uniforms);
+        renderModel(gl, model, c, transform, uniforms);
     });
 };
 
 export {
-    bind,
+    renderModel,
 };
