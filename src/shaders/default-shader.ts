@@ -1,6 +1,6 @@
 export interface Uniforms {
-    pMatrixLoc: WebGLUniformLocation;
-    mvMatrixLoc: WebGLUniformLocation;
+    pMatrix: WebGLUniformLocation;
+    vMatrix: WebGLUniformLocation;
     mMatrix: WebGLUniformLocation;
     hasBaseColorTexture: WebGLUniformLocation;
     baseColorTexture: WebGLUniformLocation;
@@ -13,9 +13,9 @@ export interface Uniforms {
 }
 
 const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : Uniforms => {
-    const pMatrixLoc = gl.getUniformLocation(program, 'uProjectionMatrix')!;
-    const mvMatrixLoc = gl.getUniformLocation(program, 'uModelViewMatrix')!;
-    const mMatrix = gl.getUniformLocation(program, 'uMeshMatrix')!;
+    const pMatrix = gl.getUniformLocation(program, 'uProjectionMatrix')!;
+    const vMatrix = gl.getUniformLocation(program, 'uViewMatrix')!;
+    const mMatrix = gl.getUniformLocation(program, 'uModelMatrix')!;
     const isAnimated = gl.getUniformLocation(program, 'uIsAnimated')!;
 
     const hasBaseColorTexture = gl.getUniformLocation(program, 'uHasBaseColorTexture')!;
@@ -31,8 +31,8 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     }
 
     return {
-        pMatrixLoc,
-        mvMatrixLoc,
+        pMatrix,
+        vMatrix,
         mMatrix,
         hasBaseColorTexture,
         baseColorTexture,

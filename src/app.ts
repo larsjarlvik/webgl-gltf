@@ -28,8 +28,8 @@ const render = (program: WebGLProgram, model: Model) => {
     bind(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
     update(gl, model, uniforms);
 
-    gl.uniformMatrix4fv(uniforms.pMatrixLoc, false, camera.pMatrix);
-    gl.uniformMatrix4fv(uniforms.mvMatrixLoc, false, camera.mvMatrix);
+    gl.uniformMatrix4fv(uniforms.pMatrix, false, camera.pMatrix);
+    gl.uniformMatrix4fv(uniforms.vMatrix, false, camera.vMatrix);
     gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);
 
     requestAnimationFrame(() => {
