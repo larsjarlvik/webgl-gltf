@@ -1,10 +1,13 @@
 #version 300 es
 
-#define LIGHT_INTENSITY vec3(0.5)
-#define LIGHT_POSITION vec3(10.0)
-#define PI 3.14159
-
 precision highp float;
+
+#define LIGHT_INTENSITY vec3(1.0)
+#define LIGHT_DIRECTION vec3(-0.7, -0.7, -1.0)
+#define LIGHT_COLOR vec3(1.0)
+#define M_PI 3.141592653589793
+
+uniform sampler2D uBrdfLut;
 
 uniform sampler2D uBaseColorTexture;
 uniform int uHasBaseColorTexture;
@@ -13,60 +16,91 @@ uniform vec4 uBaseColor;
 uniform sampler2D uRoughnessTexture;
 uniform int uHasRoughnessTexture;
 uniform float uRoughness;
+uniform vec3 uCameraPosition;
 
 in vec2 texCoord;
 in vec3 normal;
 in vec3 position;
-in vec3 cameraPosition;
 
 out vec4 fragColor;
 
-vec3 schlickFresnel(float lDotH) {
+struct MaterialInfo
+{
+    vec3 reflectance0;            // full reflectance color (normal incidence angle)
+    float alphaRoughness;         // roughness mapped to a more linear change in the roughness (proposed by [2])
+    vec3 diffuseColor;            // color contribution from diffuse lighting
+    vec3 specularColor;
+    vec3 reflectance90;           // reflectance color at grazing angle
+};
+
+vec3 specularReflection(MaterialInfo materialInfo, float VdotH) {
+    return materialInfo.reflectance0 + (materialInfo.reflectance90 - materialInfo.reflectance0) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
+}
+
+float microfacetDistribution(MaterialInfo materialInfo, float NdotH) {
+    float alphaRoughnessSq = materialInfo.alphaRoughness * materialInfo.alphaRoughness;
+    float f = (NdotH * alphaRoughnessSq - NdotH) * NdotH + 1.0;
+    return alphaRoughnessSq / (M_PI * f * f);
+}
+
+vec3 calculateDirectionalLight(MaterialInfo materialInfo, vec3 normal, vec3 view) {
+    vec3 pointToLight = -LIGHT_DIRECTION;
+
+    vec3 n = normalize(normal);           // Outward direction of surface point
+    vec3 v = normalize(view);             // Direction from surface point to view
+    vec3 l = normalize(pointToLight);     // Direction from surface point to light
+    vec3 h = normalize(l + v);            // Direction of the vector between l and v
+
+    float NdotL = clamp(dot(n, l), 0.0, 1.0);
+    float NdotH = clamp(dot(n, h), 0.0, 1.0);
+    float VdotH = clamp(dot(v, h), 0.0, 1.0);
+    float NdotV = clamp(dot(n, v), 0.0, 1.0);
+
+    if (NdotL > 0.0 || NdotV > 0.0)
+    {
+        vec3 F = specularReflection(materialInfo, VdotH);
+        float D = microfacetDistribution(materialInfo, NdotH);
+        vec3 diffuseContrib = (1.0 - F) * (materialInfo.diffuseColor / M_PI);
+        vec3 specContrib = F * D;
+
+        return LIGHT_INTENSITY * LIGHT_COLOR * NdotL * (diffuseContrib + specContrib);
+    }
+
+    return vec3(0.0);
+}
+
+MaterialInfo getMaterialInfo() {
     vec3 f0 = vec3(0.04);
-    return f0 + (1.0 - f0) * pow(1.0 - lDotH, 5.0);
-}
 
-float geomSmith(float dotProd, float rough) {
-    float k = (rough + 1.0) * (rough + 1.0) / 8.0;
-    float denom = dotProd * (1.0 - k) + k;
-    return 1.0 / denom;
-}
+    vec4 mrSample = texture(uRoughnessTexture, texCoord);
+    float perceptualRoughness = clamp(mrSample.g, 0.0, 1.0);
+    float metallic = clamp(mrSample.b, 0.0, 1.0) * 0.5;
 
-float ggxDistribution(float nDotH, float rough) {
-    float alpha2 = rough * rough * rough * rough;
-    float d = (nDotH * nDotH) * (alpha2 - 1.0) + 1.0;
-    return alpha2 / (PI * d * d);
-}
+    vec4 baseColor = texture(uBaseColorTexture, texCoord);
+    baseColor = vec4(pow(baseColor.rgb, vec3(2.2)), 1.0);
 
-vec3 calculateLight(float roughness) {
-    vec3 diffuseBrdf = vec3(0.0);
+    vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0) * (1.0 - metallic);
+    vec3 specularColor = mix(f0, baseColor.rgb, metallic);
 
-    vec3 n = normalize(normal);
-    vec3 l = normalize(LIGHT_POSITION);
-    vec3 v = normalize(-position);
-    vec3 h = normalize(v + l);
+    float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
+    vec3 reflectance0 = specularColor.rgb;
+    vec3 reflectance90 = vec3(clamp(reflectance * 50.0, 0.0, 1.0));
+    float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
-    float nDotH = dot(n, h);
-    float lDotH = dot(l, h);
-    float nDotL = max(dot(n, l), 0.0);
-    float nDotV = dot(n, v);
-
-    vec3 specBrdf = 0.25 * ggxDistribution(nDotH, roughness) * schlickFresnel(lDotH) * geomSmith(nDotL, roughness);
-
-    return (diffuseBrdf + PI + specBrdf) * LIGHT_INTENSITY * nDotL;
+    return MaterialInfo(
+        reflectance0,
+        alphaRoughness,
+        diffuseColor,
+        specularColor,
+        reflectance90
+    );
 }
 
 void main() {
-    vec4 baseColor = uBaseColor;
-    if (uHasBaseColorTexture == 1) {
-        baseColor = texture(uBaseColorTexture, texCoord);
-    }
+    MaterialInfo materialInfo = getMaterialInfo();
 
-    float roughness = uRoughness;
-    if (uHasRoughnessTexture == 1) {
-        roughness = texture(uRoughnessTexture, texCoord).g;
-    }
+    vec3 view = normalize(uCameraPosition - position);
+    vec3 color = calculateDirectionalLight(materialInfo, normal, view);
 
-    vec3 light = pow(calculateLight(roughness), vec3(1.0 / 2.2));
-    fragColor = baseColor * vec4(light, 1.0);
+    fragColor = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);
 }

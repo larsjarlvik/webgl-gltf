@@ -2,6 +2,7 @@ export interface Uniforms {
     pMatrix: WebGLUniformLocation;
     vMatrix: WebGLUniformLocation;
     mMatrix: WebGLUniformLocation;
+    cameraPosition: WebGLUniformLocation;
     hasBaseColorTexture: WebGLUniformLocation;
     baseColorTexture: WebGLUniformLocation;
     hasRoughnessTexture: WebGLUniformLocation;
@@ -10,20 +11,23 @@ export interface Uniforms {
     roughness: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
     jointTransform: WebGLUniformLocation[];
+    brdfLut: WebGLUniformLocation;
 }
 
 const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : Uniforms => {
     const pMatrix = gl.getUniformLocation(program, 'uProjectionMatrix')!;
     const vMatrix = gl.getUniformLocation(program, 'uViewMatrix')!;
     const mMatrix = gl.getUniformLocation(program, 'uModelMatrix')!;
-    const isAnimated = gl.getUniformLocation(program, 'uIsAnimated')!;
+    const cameraPosition = gl.getUniformLocation(program, 'uCameraPosition')!;
 
+    const isAnimated = gl.getUniformLocation(program, 'uIsAnimated')!;
     const hasBaseColorTexture = gl.getUniformLocation(program, 'uHasBaseColorTexture')!;
     const baseColorTexture = gl.getUniformLocation(program, 'uBaseColorTexture')!;
     const hasRoughnessTexture = gl.getUniformLocation(program, 'uHasRoughnessTexture')!;
     const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
     const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
     const roughness = gl.getUniformLocation(program, 'uRoughness')!;
+    const brdfLut = gl.getUniformLocation(program, 'uBrdfLut')!;
 
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
@@ -34,6 +38,7 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         pMatrix,
         vMatrix,
         mMatrix,
+        cameraPosition,
         hasBaseColorTexture,
         baseColorTexture,
         hasRoughnessTexture,
@@ -42,6 +47,7 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         roughness,
         isAnimated,
         jointTransform,
+        brdfLut,
     };
 };
 

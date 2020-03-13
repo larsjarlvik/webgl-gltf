@@ -25,28 +25,29 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBu
     return buffer;
 };
 
-const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform: WebGLUniformLocation) => {
+const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
     if (texture) {
         gl.activeTexture(gl.TEXTURE0 + textureTarget);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(textureUniform, textureTarget);
-        gl.uniform1i(enabledUniform, 1);
-    } else {
-        gl.uniform1i(enabledUniform, 0);
     }
+
+    if (enabledUniform !== undefined) gl.uniform1i(enabledUniform, texture ? 1 : 0);
 }
 
 const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: Uniforms) => {
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
+    applyTexture(gl, model.brdfLut, 0, uniforms.brdfLut);
+
     if (model.nodes[node].mesh !== undefined) {
         const mesh = model.meshes[model.nodes[node].mesh!];
         const material = model.materials[mesh.material];
 
         if (material) {
-            if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, 0, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
-            if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, 1, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
+            if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
+            if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
             if (material.baseColor) gl.uniform4f(uniforms.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
             if (material.roughness) gl.uniform1f(uniforms.roughness, material.roughness);
         }

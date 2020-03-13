@@ -34,6 +34,7 @@ export interface Model {
     channels: Channel;
     skins: Skin[];
     materials: Material[];
+    brdfLut: WebGLTexture;
 }
 
 export interface Channel {
