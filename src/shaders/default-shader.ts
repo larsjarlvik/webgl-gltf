@@ -7,6 +7,8 @@ export interface DefaultShader {
     baseColorTexture: WebGLUniformLocation;
     hasRoughnessTexture: WebGLUniformLocation;
     roughnessTexture: WebGLUniformLocation;
+    hasEmissiveTexture: WebGLUniformLocation;
+    emissiveTexture: WebGLUniformLocation;
     baseColor: WebGLUniformLocation;
     roughnessMetallic: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
@@ -24,6 +26,10 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     const baseColorTexture = gl.getUniformLocation(program, 'uBaseColorTexture')!;
     const hasRoughnessTexture = gl.getUniformLocation(program, 'uHasRoughnessTexture')!;
     const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
+
+    const hasEmissiveTexture = gl.getUniformLocation(program, 'uHasEmissiveTexture')!;
+    const emissiveTexture = gl.getUniformLocation(program, 'uEmissiveTexture')!;
+
     const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
     const roughnessMetallic = gl.getUniformLocation(program, 'uRoughnessMetallic')!;
 
@@ -41,6 +47,8 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         baseColorTexture,
         hasRoughnessTexture,
         roughnessTexture,
+        hasEmissiveTexture,
+        emissiveTexture,
         baseColor,
         roughnessMetallic,
         isAnimated,

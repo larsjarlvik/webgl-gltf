@@ -15,6 +15,9 @@ uniform sampler2D uRoughnessTexture;
 uniform int uHasRoughnessTexture;
 uniform vec2 uRoughnessMetallic;
 
+uniform sampler2D uEmissiveTexture;
+uniform int uHasEmissiveTexture;
+
 uniform vec3 uCameraPosition;
 
 in vec2 texCoord;
@@ -25,12 +28,11 @@ out vec4 fragColor;
 
 struct MaterialInfo
 {
-    vec3 reflectance0;            // full reflectance color (normal incidence angle)
-    float alphaRoughness;         // roughness mapped to a more linear change in the roughness (proposed by [2])
-    vec3 diffuseColor;            // color contribution from diffuse lighting
+    vec3 reflectance0;
+    float alphaRoughness;
+    vec3 diffuseColor;
     vec3 specularColor;
-    vec3 reflectance90;           // reflectance color at grazing angle
-    float perceptualRoughness;
+    vec3 reflectance90;
 };
 
 vec3 specularReflection(MaterialInfo materialInfo, float VdotH) {
@@ -83,6 +85,13 @@ vec2 getRoughnessMetallic() {
     return uRoughnessMetallic;
 }
 
+vec4 getEmissive() {
+    if (uHasEmissiveTexture == 1) {
+        return texture(uEmissiveTexture, texCoord);
+    }
+    return vec4(0.0);
+}
+
 MaterialInfo getMaterialInfo() {
     vec3 f0 = vec3(0.04);
 
@@ -106,8 +115,7 @@ MaterialInfo getMaterialInfo() {
         alphaRoughness,
         diffuseColor,
         specularColor,
-        reflectance90,
-        perceptualRoughness
+        reflectance90
     );
 }
 
@@ -117,6 +125,7 @@ void main() {
     vec3 view = normalize(uCameraPosition - position);
     vec3 color = vec3(0.1) * materialInfo.diffuseColor;
     color += calculateDirectionalLight(materialInfo, normal, view);
+    color += getEmissive().rgb;
 
     fragColor = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);
 }

@@ -153,6 +153,7 @@ const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
 const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, model: string, images?: Image[]) : Promise<Material> => {
     let baseColorTexture: WebGLTexture | null = null;
     let roughnessTexture: WebGLTexture | null = null;
+    let emissiveTexture: WebGLTexture | null = null;
     let baseColor = vec4.create();
     let roughnessMetallic = vec2.create();
 
@@ -166,7 +167,6 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, 
             const uri = images![pbr.metallicRoughnessTexture.index].uri!;
             roughnessTexture = await getTexture(gl, `/models/${model}/${uri}`);
         }
-
         baseColor = pbr.baseColorFactor
             ? vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3])
             : vec4.create();
@@ -177,9 +177,15 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, 
         );
     }
 
+    if (material.emissiveTexture) {
+        const uri = images![material.emissiveTexture.index].uri!;
+        emissiveTexture = await getTexture(gl, `/models/${model}/${uri}`);
+    }
+
     return {
         baseColorTexture,
         roughnessTexture,
+        emissiveTexture,
         baseColor,
         roughnessMetallic,
     } as Material;
@@ -205,8 +211,6 @@ const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
     const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
 
-    const brdfLut = await getTexture(gl, '/textures/brdfLUT.png')
-
     const skins = gltf.skins ? gltf.skins.map(x => {
         const bindTransforms = readArrayFromBuffer(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
         const inverseBindTransforms = x.joints.map((_, i) => createMat4FromArray(bindTransforms.data.slice(i * 16, i * 16 + 16)));
@@ -225,7 +229,6 @@ const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
         channels,
         skins,
         materials,
-        brdfLut,
     } as Model;
 };
 
