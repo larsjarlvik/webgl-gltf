@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { DefaultShader } from 'shaders/default-shader';
-import { Buffer, BufferType, Model } from './parsedMesh';
+import { Model, GLBuffer } from './parsedMesh';
 
 enum VaryingPosition {
     Positions = 0,
@@ -11,16 +11,12 @@ enum VaryingPosition {
     Weights = 5,
 };
 
-const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, gltfBuffer: Buffer | null) => {
-    if (gltfBuffer === null) return;
+const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, buffer: GLBuffer | null) => {
+    if (buffer === null) return;
 
-    const type = gltfBuffer.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT;
-
-    const buffer = gl.createBuffer();
     gl.enableVertexAttribArray(position);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, gltfBuffer.data, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(position, gltfBuffer.size, type, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+    gl.vertexAttribPointer(position, buffer.size, buffer.type, false, 0, 0);
 
     return buffer;
 };
@@ -58,9 +54,7 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
         bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
         bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
 
-        const indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indices);
         gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
 
         gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);

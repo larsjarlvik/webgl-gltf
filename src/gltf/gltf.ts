@@ -1,8 +1,7 @@
 import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Material as GlTfMaterial, Image } from 'types/gltf';
 import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
-import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material } from './parsedMesh';
-
+import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer } from './parsedMesh';
 
 const accessorSizes = {
     'SCALAR': 1,
@@ -36,17 +35,27 @@ const getTexture = async (gl: WebGL2RenderingContext, uri: string) => {
     });
 };
 
-const getArrayFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
+const getBufferFromName = (gl: WebGL2RenderingContext, gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
     if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
 
     const attribute = mesh.primitives[0].attributes[name];
     const accessor = gltf.accessors![attribute];
-    return readArrayFromBuffer(gltf, buffers, accessor);
+    const bufferData = readBufferFromFile(gltf, buffers, accessor);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, bufferData.data, gl.STATIC_DRAW);
+
+    return {
+        buffer,
+        size: bufferData.size,
+        type: bufferData.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT,
+    } as GLBuffer;
 };
 
-const readArrayFromBuffer = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Accessor) => {
+const readBufferFromFile = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Accessor) => {
     const bufferView = gltf.bufferViews![accessor.bufferView as number];
     const size = accessorSizes[accessor.type];
     const componentType = accessor.componentType as BufferType;
@@ -86,8 +95,8 @@ const loadNodes = (index: number, node: GlTfNode): Node => {
 const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[]) => {
     const channels = animation.channels.map(c => {
         const sampler = animation.samplers[c.sampler];
-        const time = readArrayFromBuffer(gltf, buffers, gltf.accessors![sampler.input]);
-        const buffer = readArrayFromBuffer(gltf, buffers, gltf.accessors![sampler.output]);
+        const time = readBufferFromFile(gltf, buffers, gltf.accessors![sampler.input]);
+        const buffer = readBufferFromFile(gltf, buffers, gltf.accessors![sampler.output]);
 
         return {
             node: c.target.node,
@@ -133,19 +142,23 @@ const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[])
     return c;
 };
 
-const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
+const loadMesh = (gl: WebGL2RenderingContext, gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
     const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
-    const indices = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
+    const indexArray = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
+
+    const indices = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
 
     return {
         indices,
-        elements: indices.length,
-        positions: getArrayFromName(gltf, buffers, mesh, 'POSITION'),
-        normals: getArrayFromName(gltf, buffers, mesh, 'NORMAL'),
-        tangents: getArrayFromName(gltf, buffers, mesh, 'TANGENT'),
-        texCoord: getArrayFromName(gltf, buffers, mesh, 'TEXCOORD_0'),
-        joints: getArrayFromName(gltf, buffers, mesh, 'JOINTS_0'),
-        weights: getArrayFromName(gltf, buffers, mesh, 'WEIGHTS_0'),
+        elements: indexArray.length,
+        positions: getBufferFromName(gl, gltf, buffers, mesh, 'POSITION'),
+        normals: getBufferFromName(gl, gltf, buffers, mesh, 'NORMAL'),
+        tangents: getBufferFromName(gl, gltf, buffers, mesh, 'TANGENT'),
+        texCoord: getBufferFromName(gl, gltf, buffers, mesh, 'TEXCOORD_0'),
+        joints: getBufferFromName(gl, gltf, buffers, mesh, 'JOINTS_0'),
+        weights: getBufferFromName(gl, gltf, buffers, mesh, 'WEIGHTS_0'),
         material: mesh.primitives[0].material,
     } as Mesh;
 };
@@ -204,7 +217,7 @@ const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
     ));
 
     const scene = gltf.scenes![gltf.scene || 0];
-    const meshes = gltf.meshes!.map(m => loadMesh(gltf, buffers, m));
+    const meshes = gltf.meshes!.map(m => loadMesh(gl, gltf, buffers, m));
     const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(gl, m, model, gltf.images))) : [];
 
     const rootNode = scene.nodes![0];
@@ -212,7 +225,7 @@ const loadModel = async (gl: WebGL2RenderingContext, model: string) => {
     const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
 
     const skins = gltf.skins ? gltf.skins.map(x => {
-        const bindTransforms = readArrayFromBuffer(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
+        const bindTransforms = readBufferFromFile(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
         const inverseBindTransforms = x.joints.map((_, i) => createMat4FromArray(bindTransforms.data.slice(i * 16, i * 16 + 16)));
 
         return {

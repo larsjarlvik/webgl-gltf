@@ -5,6 +5,7 @@ export interface Buffer {
     size: number;
     type: string;
     componentType: BufferType;
+    glBuffer: WebGLBuffer;
 }
 
 export enum BufferType {
@@ -52,15 +53,21 @@ export interface KeyFrame {
     type: string;
 }
 
+export interface GLBuffer {
+    buffer: WebGLBuffer;
+    type: number;
+    size: number;
+}
+
 export interface Mesh {
     elements: number;
-    indices: Int16Array;
-    positions: Buffer;
-    normals: Buffer | null;
-    tangents: Buffer | null;
-    texCoord: Buffer | null;
-    joints: Buffer | null;
-    weights: Buffer | null;
+    indices: WebGLBuffer;
+    positions: GLBuffer;
+    normals: GLBuffer | null;
+    tangents: GLBuffer | null;
+    texCoord: GLBuffer | null;
+    joints: GLBuffer | null;
+    weights: GLBuffer | null;
     material: number;
 }
 
