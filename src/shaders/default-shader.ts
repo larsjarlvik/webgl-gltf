@@ -11,7 +11,6 @@ export interface DefaultShader {
     roughnessMetallic: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
     jointTransform: WebGLUniformLocation[];
-    brdfLut: WebGLUniformLocation;
 }
 
 const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : DefaultShader => {
@@ -27,7 +26,6 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
     const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
     const roughnessMetallic = gl.getUniformLocation(program, 'uRoughnessMetallic')!;
-    const brdfLut = gl.getUniformLocation(program, 'uBrdfLut')!;
 
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
@@ -47,7 +45,6 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         roughnessMetallic,
         isAnimated,
         jointTransform,
-        brdfLut,
     };
 };
 

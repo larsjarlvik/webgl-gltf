@@ -7,8 +7,6 @@ precision highp float;
 #define LIGHT_COLOR vec3(1.0)
 #define M_PI 3.141592653589793
 
-uniform sampler2D uBrdfLut;
-
 uniform sampler2D uBaseColorTexture;
 uniform int uHasBaseColorTexture;
 uniform vec4 uBaseColor;
@@ -32,6 +30,7 @@ struct MaterialInfo
     vec3 diffuseColor;            // color contribution from diffuse lighting
     vec3 specularColor;
     vec3 reflectance90;           // reflectance color at grazing angle
+    float perceptualRoughness;
 };
 
 vec3 specularReflection(MaterialInfo materialInfo, float VdotH) {
@@ -107,7 +106,8 @@ MaterialInfo getMaterialInfo() {
         alphaRoughness,
         diffuseColor,
         specularColor,
-        reflectance90
+        reflectance90,
+        perceptualRoughness
     );
 }
 
@@ -115,7 +115,8 @@ void main() {
     MaterialInfo materialInfo = getMaterialInfo();
 
     vec3 view = normalize(uCameraPosition - position);
-    vec3 color = calculateDirectionalLight(materialInfo, normal, view);
+    vec3 color = vec3(0.1) * materialInfo.diffuseColor;
+    color += calculateDirectionalLight(materialInfo, normal, view);
 
     fragColor = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);
 }

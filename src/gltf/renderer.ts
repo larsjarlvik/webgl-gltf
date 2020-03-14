@@ -39,8 +39,6 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
-    applyTexture(gl, model.brdfLut, 0, uniforms.brdfLut);
-
     if (model.nodes[node].mesh !== undefined) {
         const mesh = model.meshes[model.nodes[node].mesh!];
         const material = model.materials[mesh.material];
