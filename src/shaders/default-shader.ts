@@ -1,4 +1,4 @@
-export interface Uniforms {
+export interface DefaultShader {
     pMatrix: WebGLUniformLocation;
     vMatrix: WebGLUniformLocation;
     mMatrix: WebGLUniformLocation;
@@ -8,13 +8,13 @@ export interface Uniforms {
     hasRoughnessTexture: WebGLUniformLocation;
     roughnessTexture: WebGLUniformLocation;
     baseColor: WebGLUniformLocation;
-    roughness: WebGLUniformLocation;
+    roughnessMetallic: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
     jointTransform: WebGLUniformLocation[];
     brdfLut: WebGLUniformLocation;
 }
 
-const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : Uniforms => {
+const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : DefaultShader => {
     const pMatrix = gl.getUniformLocation(program, 'uProjectionMatrix')!;
     const vMatrix = gl.getUniformLocation(program, 'uViewMatrix')!;
     const mMatrix = gl.getUniformLocation(program, 'uModelMatrix')!;
@@ -26,7 +26,7 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     const hasRoughnessTexture = gl.getUniformLocation(program, 'uHasRoughnessTexture')!;
     const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
     const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
-    const roughness = gl.getUniformLocation(program, 'uRoughness')!;
+    const roughnessMetallic = gl.getUniformLocation(program, 'uRoughnessMetallic')!;
     const brdfLut = gl.getUniformLocation(program, 'uBrdfLut')!;
 
     const jointTransform: WebGLUniformLocation[] = [];
@@ -44,7 +44,7 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         hasRoughnessTexture,
         roughnessTexture,
         baseColor,
-        roughness,
+        roughnessMetallic,
         isAnimated,
         jointTransform,
         brdfLut,

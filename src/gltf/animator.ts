@@ -1,6 +1,6 @@
 import { Model, KeyFrame, Skin } from './parsedMesh';
 import { mat4, vec3, quat } from 'gl-matrix';
-import { Uniforms } from 'shaders/default-shader';
+import { DefaultShader } from 'shaders/default-shader';
 
 const getPreviousAndNextKeyFrame = (keyFrames: KeyFrame[], animationTime: number) => {
     let next = keyFrames[0];
@@ -68,7 +68,7 @@ const applyTransforms = (gl: WebGL2RenderingContext, target: WebGLUniformLocatio
     });
 };
 
-const update = (gl: WebGL2RenderingContext, model: Model, uniforms: Uniforms) => {
+const update = (gl: WebGL2RenderingContext, model: Model, uniforms: DefaultShader) => {
     if (!model.channels) {
         gl.uniform1i(uniforms.isAnimated, 0);
         return;

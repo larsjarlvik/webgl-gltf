@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
 
 interface CameraMatrix {
     pMatrix: mat4;
@@ -11,7 +11,7 @@ interface Camera {
     distance: number;
 }
 
-const updateCamera = (camera: Camera, viewportWidth: number, viewportHeight: number): CameraMatrix => {
+const update = (camera: Camera, viewportWidth: number, viewportHeight: number): CameraMatrix => {
     let pMatrix = mat4.create();
     let vMatrix = mat4.create();
 
@@ -22,9 +22,16 @@ const updateCamera = (camera: Camera, viewportWidth: number, viewportHeight: num
     mat4.perspective(pMatrix, 45.0, viewportWidth / viewportHeight, 0.1, 100.0);
 
     return { pMatrix, vMatrix };
-}
+};
+
+const getPosition = (camera: Camera) => vec3.fromValues(
+    camera.distance * Math.cos(camera.rotationV) * Math.sin(camera.rotationH),
+    camera.distance * Math.sin(camera.rotationV),
+    camera.distance * Math.cos(camera.rotationV) * Math.cos(camera.rotationH),
+);
 
 export {
     Camera,
-    updateCamera,
+    update,
+    getPosition,
 };

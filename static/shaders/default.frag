@@ -15,7 +15,8 @@ uniform vec4 uBaseColor;
 
 uniform sampler2D uRoughnessTexture;
 uniform int uHasRoughnessTexture;
-uniform float uRoughness;
+uniform vec2 uRoughnessMetallic;
+
 uniform vec3 uCameraPosition;
 
 in vec2 texCoord;
@@ -69,14 +70,28 @@ vec3 calculateDirectionalLight(MaterialInfo materialInfo, vec3 normal, vec3 view
     return vec3(0.0);
 }
 
+vec4 getBaseColor() {
+    if (uHasBaseColorTexture == 1) {
+        return texture(uBaseColorTexture, texCoord);
+    }
+    return uBaseColor;
+}
+
+vec2 getRoughnessMetallic() {
+    if (uHasRoughnessTexture == 1) {
+        return texture(uRoughnessTexture, texCoord).gb;
+    }
+    return uRoughnessMetallic;
+}
+
 MaterialInfo getMaterialInfo() {
     vec3 f0 = vec3(0.04);
 
-    vec4 mrSample = texture(uRoughnessTexture, texCoord);
-    float perceptualRoughness = clamp(mrSample.g, 0.0, 1.0);
-    float metallic = clamp(mrSample.b, 0.0, 1.0) * 0.5;
+    vec2 mrSample = getRoughnessMetallic();
+    float perceptualRoughness = clamp(mrSample[0], 0.0, 1.0);
+    float metallic = clamp(mrSample[1], 0.0, 1.0) * 0.5;
 
-    vec4 baseColor = texture(uBaseColorTexture, texCoord);
+    vec4 baseColor = getBaseColor();
     baseColor = vec4(pow(baseColor.rgb, vec3(2.2)), 1.0);
 
     vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0) * (1.0 - metallic);

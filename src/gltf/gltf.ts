@@ -1,5 +1,5 @@
 import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Material as GlTfMaterial, Image } from 'types/gltf';
-import { mat4, quat, vec3, vec4 } from 'gl-matrix';
+import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
 import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material } from './parsedMesh';
 
@@ -153,8 +153,8 @@ const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
 const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, model: string, images?: Image[]) : Promise<Material> => {
     let baseColorTexture: WebGLTexture | null = null;
     let roughnessTexture: WebGLTexture | null = null;
-    let baseColor: vec4 = vec4.create();
-    let roughness: number = 0.0;
+    let baseColor = vec4.create();
+    let roughnessMetallic = vec2.create();
 
     const pbr = material.pbrMetallicRoughness;
     if (pbr) {
@@ -171,14 +171,17 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, 
             ? vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3])
             : vec4.create();
 
-        roughness = pbr.roughnessFactor ? pbr.roughnessFactor[0] : 0.0;
+        roughnessMetallic = vec2.fromValues(
+            pbr.roughnessFactor ? pbr.roughnessFactor[0] : 0.0,
+            pbr.metallicFactor ? pbr.metallicFactor[0] : 0.0
+        );
     }
 
     return {
         baseColorTexture,
         roughnessTexture,
         baseColor,
-        roughness,
+        roughnessMetallic,
     } as Material;
 };
 
