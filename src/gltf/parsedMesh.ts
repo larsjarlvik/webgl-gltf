@@ -75,6 +75,7 @@ export interface Material {
     baseColorTexture: WebGLTexture | null;
     roughnessTexture: WebGLTexture | null;
     emissiveTexture: WebGLTexture | null;
+    normalTexture: WebGLTexture | null;
     baseColor: vec4;
     roughnessMetallic: vec2;
 }

@@ -18,11 +18,15 @@ uniform vec2 uRoughnessMetallic;
 uniform sampler2D uEmissiveTexture;
 uniform int uHasEmissiveTexture;
 
+uniform sampler2D uNormalTexture;
+uniform int uHasNormalTexture;
+
 uniform vec3 uCameraPosition;
 
 in vec2 texCoord;
 in vec3 normal;
 in vec3 position;
+in mat3 tangent;
 
 out vec4 fragColor;
 
@@ -108,7 +112,7 @@ MaterialInfo getMaterialInfo() {
     float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
     vec3 reflectance0 = specularColor.rgb;
     vec3 reflectance90 = vec3(clamp(reflectance * 50.0, 0.0, 1.0));
-    float alphaRoughness = perceptualRoughness * perceptualRoughness;
+    float alphaRoughness = perceptualRoughness * perceptualRoughness * 3.0;
 
     return MaterialInfo(
         reflectance0,
@@ -122,9 +126,14 @@ MaterialInfo getMaterialInfo() {
 void main() {
     MaterialInfo materialInfo = getMaterialInfo();
 
+    vec3 n = normal;
+    if (uHasNormalTexture == 1) {
+        n = texture(uNormalTexture, texCoord).rgb;
+        n = normalize(tangent * ((2.0 * n - 1.0)));
+    }
+
     vec3 view = normalize(uCameraPosition - position);
-    vec3 color = vec3(0.1) * materialInfo.diffuseColor;
-    color += calculateDirectionalLight(materialInfo, normal, view);
+    vec3 color = calculateDirectionalLight(materialInfo, n, view);
     color += getEmissive().rgb;
 
     fragColor = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);

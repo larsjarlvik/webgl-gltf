@@ -43,6 +43,7 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
             if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
             if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
             if (material.emissiveTexture) applyTexture(gl, material.emissiveTexture, 3, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
+            if (material.normalTexture) applyTexture(gl, material.normalTexture, 4, uniforms.normalTexture, uniforms.hasNormalTexture);
             if (material.baseColor) gl.uniform4f(uniforms.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
             if (material.roughnessMetallic) gl.uniform2f(uniforms.roughnessMetallic, material.roughnessMetallic[0], material.roughnessMetallic[1]);
         }

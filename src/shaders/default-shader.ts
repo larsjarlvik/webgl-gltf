@@ -8,6 +8,8 @@ export interface DefaultShader {
     hasRoughnessTexture: WebGLUniformLocation;
     roughnessTexture: WebGLUniformLocation;
     hasEmissiveTexture: WebGLUniformLocation;
+    normalTexture: WebGLUniformLocation;
+    hasNormalTexture: WebGLUniformLocation;
     emissiveTexture: WebGLUniformLocation;
     baseColor: WebGLUniformLocation;
     roughnessMetallic: WebGLUniformLocation;
@@ -33,6 +35,9 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
     const roughnessMetallic = gl.getUniformLocation(program, 'uRoughnessMetallic')!;
 
+    const normalTexture = gl.getUniformLocation(program, 'uNormalTexture')!;
+    const hasNormalTexture = gl.getUniformLocation(program, 'uHasNormalTexture')!;
+
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
         jointTransform[i] = gl.getUniformLocation(program, `uJointTransform[${i}]`)!
@@ -48,6 +53,8 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         hasRoughnessTexture,
         roughnessTexture,
         hasEmissiveTexture,
+        normalTexture,
+        hasNormalTexture,
         emissiveTexture,
         baseColor,
         roughnessMetallic,
