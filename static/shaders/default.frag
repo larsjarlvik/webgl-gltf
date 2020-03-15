@@ -2,9 +2,10 @@
 
 precision highp float;
 
-#define LIGHT_INTENSITY vec3(1.0)
+#define LIGHT_INTENSITY vec3(2.0)
 #define LIGHT_DIRECTION vec3(-0.7, -0.7, -1.0)
 #define LIGHT_COLOR vec3(1.0)
+#define LIGHT_AMBIENT vec3(0.08)
 #define M_PI 3.141592653589793
 
 uniform sampler2D uBaseColorTexture;
@@ -20,6 +21,9 @@ uniform int uHasEmissiveTexture;
 
 uniform sampler2D uNormalTexture;
 uniform int uHasNormalTexture;
+
+uniform sampler2D uOcclusionTexture;
+uniform int uHasOcclusionTexture;
 
 uniform vec3 uCameraPosition;
 
@@ -96,6 +100,13 @@ vec4 getEmissive() {
     return vec4(0.0);
 }
 
+float getOcclusion() {
+    if (uHasOcclusionTexture == 1) {
+        return texture(uOcclusionTexture, texCoord).r;
+    }
+    return 1.0;
+}
+
 MaterialInfo getMaterialInfo() {
     vec3 f0 = vec3(0.04);
 
@@ -135,6 +146,10 @@ void main() {
     vec3 view = normalize(uCameraPosition - position);
     vec3 color = calculateDirectionalLight(materialInfo, n, view);
     color += getEmissive().rgb;
+    color += LIGHT_AMBIENT * materialInfo.diffuseColor;
+
+    color = clamp(color, 0.0, 1.0);
+    color = mix(color, color * getOcclusion(), 1.0);
 
     fragColor = vec4(pow(color, vec3(1.0 / 2.2)), 1.0);
 }

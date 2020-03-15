@@ -168,6 +168,7 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, 
     let roughnessTexture: WebGLTexture | null = null;
     let emissiveTexture: WebGLTexture | null = null;
     let normalTexture: WebGLTexture | null = null;
+    let occlusionTexture: WebGLTexture | null = null;
     let baseColor = vec4.create();
     let roughnessMetallic = vec2.create();
 
@@ -201,11 +202,17 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, 
         normalTexture = await getTexture(gl, `/models/${model}/${uri}`);
     }
 
+    if (material.occlusionTexture) {
+        const uri = images![material.occlusionTexture.index].uri!;
+        occlusionTexture = await getTexture(gl, `/models/${model}/${uri}`);
+    }
+
     return {
         baseColorTexture,
         roughnessTexture,
         emissiveTexture,
         normalTexture,
+        occlusionTexture,
         baseColor,
         roughnessMetallic,
     } as Material;

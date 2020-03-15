@@ -11,6 +11,8 @@ export interface DefaultShader {
     normalTexture: WebGLUniformLocation;
     hasNormalTexture: WebGLUniformLocation;
     emissiveTexture: WebGLUniformLocation;
+    hasOcclusionTexture: WebGLUniformLocation;
+    occlusionTexture: WebGLUniformLocation;
     baseColor: WebGLUniformLocation;
     roughnessMetallic: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
@@ -38,6 +40,9 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
     const normalTexture = gl.getUniformLocation(program, 'uNormalTexture')!;
     const hasNormalTexture = gl.getUniformLocation(program, 'uHasNormalTexture')!;
 
+    const occlusionTexture = gl.getUniformLocation(program, 'uOcclusionTexture')!;
+    const hasOcclusionTexture = gl.getUniformLocation(program, 'uHasOcclusionTexture')!;
+
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
         jointTransform[i] = gl.getUniformLocation(program, `uJointTransform[${i}]`)!
@@ -55,6 +60,8 @@ const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) :
         hasEmissiveTexture,
         normalTexture,
         hasNormalTexture,
+        occlusionTexture,
+        hasOcclusionTexture,
         emissiveTexture,
         baseColor,
         roughnessMetallic,
