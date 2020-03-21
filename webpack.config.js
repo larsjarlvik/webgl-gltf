@@ -16,8 +16,17 @@ module.exports = {
             test: /\.ts(x?)$/,
             include: [path.resolve('./src')],
             use: [{ loader: 'ts-loader' }]
-        }],
-    },
+        },
+        {
+            test: /\.(ts|tsx)$/,
+            enforce: 'pre',
+            use: [{
+                options: { eslintPath: require.resolve('eslint') },
+                loader: require.resolve('eslint-loader'),
+            }],
+            exclude: /node_modules/,
+        }
+    ]},
     output: {
         path: __dirname + '/dist',
         publicPath: '/',
@@ -33,4 +42,4 @@ module.exports = {
             modules: false,
         },
     },
-};
+}

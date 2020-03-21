@@ -8,13 +8,13 @@ import { update } from 'gltf/animator';
 import { renderModel } from 'gltf/renderer';
 import { DefaultShader } from 'shaders/default-shader';
 
-const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
+const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
 const cam = {
     rotationH: 0.0,
     rotationV: 0.0,
-    distance: 5.0,
+    distance: 1.0,
 } as camera.Camera;
 
 const setSize = () => {
@@ -24,7 +24,7 @@ const setSize = () => {
 }
 
 if (!gl) {
-    console.error("WebGL 2 not available");
+    console.error('WebGL 2 not available')
 }
 
 const render = (program: WebGLProgram, uniforms: DefaultShader, model: Model) => {
@@ -81,12 +81,12 @@ canvas.addEventListener('wheel', (event) => {
     cam.distance += event.deltaY > 0 ? 0.05: -0.05;
 });
 
-canvas.addEventListener("mousedown", () => {
-    canvas.addEventListener("mousemove", mouseMove);
+canvas.addEventListener('mousedown', () => {
+    canvas.addEventListener('mousemove', mouseMove);
 });
 
-canvas.addEventListener("mouseup", () => {
-    canvas.removeEventListener("mousemove", mouseMove);
+canvas.addEventListener('mouseup', () => {
+    canvas.removeEventListener('mousemove', mouseMove);
     lastPosition = undefined;
 });
 

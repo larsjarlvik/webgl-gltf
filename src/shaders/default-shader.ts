@@ -19,7 +19,7 @@ export interface DefaultShader {
     jointTransform: WebGLUniformLocation[];
 }
 
-const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram) : DefaultShader => {
+const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram): DefaultShader => {
     const pMatrix = gl.getUniformLocation(program, 'uProjectionMatrix')!;
     const vMatrix = gl.getUniformLocation(program, 'uViewMatrix')!;
     const mMatrix = gl.getUniformLocation(program, 'uModelMatrix')!;

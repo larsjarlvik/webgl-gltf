@@ -16,7 +16,9 @@ const accessorSizes = {
 const getBuffer = async (model: string, buffer: string) => {
     const response = await fetch(`/models/${model}/${buffer}`);
     const blob = await response.blob();
-    return await (<any>blob).arrayBuffer() as ArrayBuffer;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await (blob as any).arrayBuffer();
 };
 
 const getTexture = async (gl: WebGL2RenderingContext, uri: string) => {
@@ -33,6 +35,24 @@ const getTexture = async (gl: WebGL2RenderingContext, uri: string) => {
         }
         img.src = uri;
     });
+};
+
+const readBufferFromFile = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Accessor) => {
+    const bufferView = gltf.bufferViews![accessor.bufferView as number];
+    const size = accessorSizes[accessor.type];
+    const componentType = accessor.componentType as BufferType;
+    const type = accessor.type;
+
+    const data = componentType == BufferType.Float
+        ? new Float32Array(buffers[bufferView.buffer], (accessor.byteOffset || 0) + (bufferView.byteOffset || 0), accessor.count * size)
+        : new Int16Array(buffers[bufferView.buffer], (accessor.byteOffset || 0) + (bufferView.byteOffset || 0), accessor.count * size);
+
+    return {
+        size,
+        data,
+        type,
+        componentType,
+    } as Buffer;
 };
 
 const getBufferFromName = (gl: WebGL2RenderingContext, gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
@@ -53,24 +73,6 @@ const getBufferFromName = (gl: WebGL2RenderingContext, gltf: GlTf, buffers: Arra
         size: bufferData.size,
         type: bufferData.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT,
     } as GLBuffer;
-};
-
-const readBufferFromFile = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Accessor) => {
-    const bufferView = gltf.bufferViews![accessor.bufferView as number];
-    const size = accessorSizes[accessor.type];
-    const componentType = accessor.componentType as BufferType;
-    const type = accessor.type;
-
-    const data = componentType == BufferType.Float
-        ? new Float32Array(buffers[bufferView.buffer], (accessor.byteOffset || 0) + (bufferView.byteOffset || 0), accessor.count * size)
-        : new Int16Array(buffers[bufferView.buffer], (accessor.byteOffset || 0) + (bufferView.byteOffset || 0), accessor.count * size);
-
-    return {
-        size,
-        data,
-        type,
-        componentType,
-    } as Buffer;
 };
 
 const loadNodes = (index: number, node: GlTfNode): Node => {
@@ -163,7 +165,7 @@ const loadMesh = (gl: WebGL2RenderingContext, gltf: GlTf, buffers: ArrayBuffer[]
     } as Mesh;
 };
 
-const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, model: string, images?: Image[]) : Promise<Material> => {
+const loadMaterial = async (gl: WebGL2RenderingContext, material: GlTfMaterial, model: string, images?: Image[]): Promise<Material> => {
     let baseColorTexture: WebGLTexture | null = null;
     let roughnessTexture: WebGLTexture | null = null;
     let emissiveTexture: WebGLTexture | null = null;
