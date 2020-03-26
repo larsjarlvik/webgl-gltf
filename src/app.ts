@@ -1,6 +1,7 @@
 import * as shader from 'shaders/shader-loader';
 import * as defaultShader from 'shaders/default-shader';
 import * as camera from 'camera';
+import * as inputs from 'inputs';
 
 import { Model } from 'gltf/parsedMesh';
 import { loadModel } from 'gltf/gltf';
@@ -64,30 +65,15 @@ const startup = async () => {
     render(program, uniforms, model);
 };
 
-let lastPosition;
-const mouseMove = (event) => {
-    if (lastPosition !== undefined) {
-        cam.rotationH += (event.clientX - lastPosition.x) / 100.0;
-        cam.rotationV += (event.clientY - lastPosition.y) / 100.0;
-    }
-
-    lastPosition = {
-        x: event.clientX,
-        y: event.clientY
-    };
+const rotate = (delta: inputs.Position) => {
+    cam.rotationH += delta.x;
+    cam.rotationV += delta.y;
 };
 
-canvas.addEventListener('wheel', (event) => {
-    cam.distance += event.deltaY > 0 ? 0.05: -0.05;
-});
+const zoom = (delta: number) => {
+    cam.distance *= 1.0 + delta;
+    if (cam.distance < 0.0) cam.distance = 0.0;
+};
 
-canvas.addEventListener('mousedown', () => {
-    canvas.addEventListener('mousemove', mouseMove);
-});
-
-canvas.addEventListener('mouseup', () => {
-    canvas.removeEventListener('mousemove', mouseMove);
-    lastPosition = undefined;
-});
-
+inputs.listen(canvas, rotate, zoom);
 startup();
