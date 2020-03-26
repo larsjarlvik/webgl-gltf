@@ -48,7 +48,7 @@ interface Transform {
     [key: number]: mat4;
 }
 
-const applyTransforms = (gl: WebGL2RenderingContext, target: WebGLUniformLocation[], model: Model, transforms: Transform, matrix: mat4, skin: Skin, nodeIndex: number) => {
+const applyTransforms = (target: WebGLUniformLocation[], model: Model, transforms: Transform, matrix: mat4, skin: Skin, nodeIndex: number) => {
     const node = model.nodes[nodeIndex];
 
     if (transforms[node.id] !== undefined) {
@@ -64,11 +64,11 @@ const applyTransforms = (gl: WebGL2RenderingContext, target: WebGLUniformLocatio
     node.children.forEach(childNode => {
         const childTransform = mat4.create();
         mat4.copy(childTransform, matrix);
-        applyTransforms(gl, target, model, transforms, childTransform, skin, childNode);
+        applyTransforms(target, model, transforms, childTransform, skin, childNode);
     });
 };
 
-const update = (gl: WebGL2RenderingContext, model: Model, uniforms: DefaultShader) => {
+const update = (model: Model, uniforms: DefaultShader) => {
     if (!model.channels) {
         gl.uniform1i(uniforms.isAnimated, 0);
         return;
@@ -93,7 +93,7 @@ const update = (gl: WebGL2RenderingContext, model: Model, uniforms: DefaultShade
 
     model.skins.forEach(skin => {
         const root = skin.skeleton !== undefined ? skin.skeleton : skin.joints[0];
-        applyTransforms(gl, uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
+        applyTransforms(uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
     });
 
     gl.uniform1i(uniforms.isAnimated, 1);

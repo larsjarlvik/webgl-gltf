@@ -1,5 +1,5 @@
 
-const loadShader = async (gl: WebGL2RenderingContext, name: string, type: number) => {
+const loadShader = async (name: string, type: number) => {
     const response = await fetch(`/shaders/${name}`);
     const content = await response.text();
 
@@ -17,14 +17,14 @@ const loadShader = async (gl: WebGL2RenderingContext, name: string, type: number
     return shader;
 };
 
-const createProgram = (gl: WebGL2RenderingContext) => {
+const createProgram = () => {
     const program = gl.createProgram();
     if (program === null) throw new Error('gl.createProgram returned null!');
 
     return program as WebGLProgram;
 };
 
-const linkProgram = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
+const linkProgram = (program: WebGLProgram) => {
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(program));

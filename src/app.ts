@@ -10,7 +10,7 @@ import { renderModel } from 'gltf/renderer';
 import { DefaultShader } from 'shaders/default-shader';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
+window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
 const cam = {
     rotationH: Math.PI / 2.0,
@@ -38,8 +38,8 @@ const render = (program: WebGLProgram, uniforms: DefaultShader, model: Model) =>
     gl.uniformMatrix4fv(uniforms.pMatrix, false, cameraMatrix.pMatrix);
     gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
 
-    update(gl, model, uniforms);
-    renderModel(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
+    update(model, uniforms);
+    renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
 
     requestAnimationFrame(() => {
         render(program, uniforms, model);
@@ -53,16 +53,16 @@ const startup = async () => {
     window.onresize = () => { setSize(); };
     setSize();
 
-    const program = shader.createProgram(gl);
-    gl.attachShader(program, await shader.loadShader(gl, 'default.vert', gl.VERTEX_SHADER));
-    gl.attachShader(program, await shader.loadShader(gl, 'default.frag', gl.FRAGMENT_SHADER));
-    shader.linkProgram(gl, program);
+    const program = shader.createProgram();
+    gl.attachShader(program, await shader.loadShader('default.vert', gl.VERTEX_SHADER));
+    gl.attachShader(program, await shader.loadShader('default.frag', gl.FRAGMENT_SHADER));
+    shader.linkProgram(program);
 
     const urlParams = new URLSearchParams(window.location.search);
     const modelName = urlParams.get('model');
 
-    const uniforms = defaultShader.getUniformLocations(gl, program);
-    const model = await loadModel(gl, modelName ? modelName : 'waterbottle');
+    const uniforms = defaultShader.getUniformLocations(program);
+    const model = await loadModel(modelName ? modelName : 'waterbottle');
     console.log(model);
 
     render(program, uniforms, model);

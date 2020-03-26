@@ -11,7 +11,7 @@ enum VaryingPosition {
     Weights = 5,
 };
 
-const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, buffer: GLBuffer | null) => {
+const bindBuffer = (position: VaryingPosition, buffer: GLBuffer | null) => {
     if (buffer === null) return;
 
     gl.enableVertexAttribArray(position);
@@ -21,7 +21,7 @@ const bindBuffer = (gl: WebGLRenderingContext, position: VaryingPosition, buffer
     return buffer;
 };
 
-const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
+const applyTexture = (texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
     if (texture) {
         gl.activeTexture(gl.TEXTURE0 + textureTarget);
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -31,7 +31,7 @@ const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture, texture
     if (enabledUniform !== undefined) gl.uniform1i(enabledUniform, texture ? 1 : 0);
 }
 
-const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, uniforms: DefaultShader) => {
+const renderModel = (model: Model, node: number, transform: mat4, uniforms: DefaultShader) => {
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
@@ -40,21 +40,21 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
         const material = model.materials[mesh.material];
 
         if (material) {
-            if (material.baseColorTexture) applyTexture(gl, material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
-            if (material.roughnessTexture) applyTexture(gl, material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
-            if (material.emissiveTexture) applyTexture(gl, material.emissiveTexture, 3, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
-            if (material.normalTexture) applyTexture(gl, material.normalTexture, 4, uniforms.normalTexture, uniforms.hasNormalTexture);
-            if (material.occlusionTexture) applyTexture(gl, material.occlusionTexture, 5, uniforms.occlusionTexture, uniforms.hasOcclusionTexture);
+            if (material.baseColorTexture) applyTexture(material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
+            if (material.roughnessTexture) applyTexture(material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
+            if (material.emissiveTexture) applyTexture(material.emissiveTexture, 3, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
+            if (material.normalTexture) applyTexture(material.normalTexture, 4, uniforms.normalTexture, uniforms.hasNormalTexture);
+            if (material.occlusionTexture) applyTexture(material.occlusionTexture, 5, uniforms.occlusionTexture, uniforms.hasOcclusionTexture);
             if (material.baseColor) gl.uniform4f(uniforms.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
             if (material.roughnessMetallic) gl.uniform2f(uniforms.roughnessMetallic, material.roughnessMetallic[0], material.roughnessMetallic[1]);
         }
 
-        bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
-        bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
-        bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
-        bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
-        bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
-        bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
+        bindBuffer(VaryingPosition.Positions, mesh.positions);
+        bindBuffer(VaryingPosition.Normal, mesh.normals);
+        bindBuffer(VaryingPosition.Tangent, mesh.tangents);
+        bindBuffer(VaryingPosition.TexCoord, mesh.texCoord);
+        bindBuffer(VaryingPosition.Joints, mesh.joints);
+        bindBuffer(VaryingPosition.Weights, mesh.weights);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indices);
         gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
@@ -63,7 +63,7 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
     }
 
     model.nodes[node].children.forEach(c => {
-        renderModel(gl, model, c, transform, uniforms);
+        renderModel(model, c, transform, uniforms);
     });
 };
 
