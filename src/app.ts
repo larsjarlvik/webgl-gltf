@@ -13,9 +13,9 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
 const cam = {
-    rotationH: 0.0,
+    rotationH: Math.PI / 2.0,
     rotationV: 0.0,
-    distance: 1.0,
+    distance: 3.0,
 } as camera.Camera;
 
 const setSize = () => {
@@ -25,7 +25,7 @@ const setSize = () => {
 }
 
 if (!gl) {
-    console.error('WebGL 2 not available')
+    alert('WebGL 2 not available')
 }
 
 const render = (program: WebGLProgram, uniforms: DefaultShader, model: Model) => {
@@ -58,8 +58,11 @@ const startup = async () => {
     gl.attachShader(program, await shader.loadShader(gl, 'default.frag', gl.FRAGMENT_SHADER));
     shader.linkProgram(gl, program);
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const modelName = urlParams.get('model');
+
     const uniforms = defaultShader.getUniformLocations(gl, program);
-    const model = await loadModel(gl, 'waterbottle');
+    const model = await loadModel(gl, modelName ? modelName : 'waterbottle');
     console.log(model);
 
     render(program, uniforms, model);
