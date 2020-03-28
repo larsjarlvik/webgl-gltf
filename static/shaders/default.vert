@@ -1,6 +1,6 @@
 #version 300 es
 
-layout (location=0) in vec3 vPosition;
+layout (location=0) in vec4 vPosition;
 layout (location=1) in vec3 vNormal;
 layout (location=2) in vec4 vTangent;
 layout (location=3) in vec2 vTexCoord;
@@ -28,15 +28,18 @@ void main() {
             vWeights.w * uJointTransform[int(vJoints.w)];
     }
 
-    mat4 normalMatrix = transpose(inverse(skinMatrix));
+    vec3 n = normalize(vNormal);
+    vec4 t = normalize(vTangent);
 
-    vec3 normalW = normalize(vec3(normalMatrix * vec4(vNormal.xyz, 0.0)));
-    vec3 tangentW = normalize(vec3(uModelMatrix * vec4(vTangent.xyz, 0.0)));
-    vec3 bitangentW = cross(normalW, tangentW) * vTangent.w;
+    mat4 normalMatrix = transpose(inverse(skinMatrix));
+    vec3 normalW = normalize(vec3(normalMatrix * vec4(n.xyz, 0.0)));
+    vec3 tangentW = normalize(vec3(uModelMatrix * vec4(t.xyz, 0.0)));
+    vec3 bitangentW = cross(normalW, tangentW) * t.w;
 
     tangent = mat3(tangentW, bitangentW, normalW);
-    texCoord = vTexCoord;
     normal = normalize(mat3(normalMatrix) * vec3(skinMatrix * vec4(vNormal, 1.0)));
-    position = vPosition;
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * skinMatrix * vec4(vPosition, 1.0);
+    texCoord = vTexCoord;
+    position = vec3(uModelMatrix * vPosition) / vPosition.w;
+
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * skinMatrix * vPosition;
 }

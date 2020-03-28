@@ -13,8 +13,8 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
 const cam = {
-    rotationH: Math.PI / 2.0,
-    rotationV: 0.0,
+    rY: 0.0,
+    rX: 0.0,
     distance: 3.0,
 } as camera.Camera;
 
@@ -32,14 +32,13 @@ const render = (program: WebGLProgram, uniforms: DefaultShader, model: Model) =>
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const cameraMatrix = camera.update(cam, canvas.width, canvas.height);
-    const cameraPosition = camera.getPosition(cam);
-
-    gl.uniform3f(uniforms.cameraPosition, cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+    gl.uniform3f(uniforms.cameraPosition, cameraMatrix.position[0], cameraMatrix.position[1], cameraMatrix.position[2]);
     gl.uniformMatrix4fv(uniforms.pMatrix, false, cameraMatrix.pMatrix);
     gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
 
     update(model, uniforms);
     renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
+    console.log(model.nodes[model.rootNode].localBindTransform);
 
     requestAnimationFrame(() => {
         render(program, uniforms, model);
@@ -69,8 +68,8 @@ const startup = async () => {
 };
 
 const rotate = (delta: inputs.Position) => {
-    cam.rotationH += delta.x;
-    cam.rotationV += delta.y;
+    cam.rX -= delta.x;
+    cam.rY -= delta.y;
 };
 
 const zoom = (delta: number) => {
