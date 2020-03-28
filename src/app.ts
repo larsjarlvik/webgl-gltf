@@ -28,20 +28,22 @@ if (!gl) {
     alert('WebGL 2 not available')
 }
 
-const render = (program: WebGLProgram, uniforms: DefaultShader, model: Model) => {
+const render = (shader: DefaultShader, models: Model[]) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const cameraMatrix = camera.update(cam, canvas.width, canvas.height);
-    gl.uniform3f(uniforms.cameraPosition, cameraMatrix.position[0], cameraMatrix.position[1], cameraMatrix.position[2]);
-    gl.uniformMatrix4fv(uniforms.pMatrix, false, cameraMatrix.pMatrix);
-    gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
+    gl.uniform3f(shader.cameraPosition, cameraMatrix.position[0], cameraMatrix.position[1], cameraMatrix.position[2]);
+    gl.uniformMatrix4fv(shader.pMatrix, false, cameraMatrix.pMatrix);
+    gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
 
-    update(model, uniforms);
-    renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
-    console.log(model.nodes[model.rootNode].localBindTransform);
+    models.forEach(model => {
+        update(model, shader);
+        renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
+    });
+
 
     requestAnimationFrame(() => {
-        render(program, uniforms, model);
+        render(shader, models);
     });
 };
 
@@ -57,14 +59,14 @@ const startup = async () => {
     gl.attachShader(program, await shader.loadShader('default.frag', gl.FRAGMENT_SHADER));
     shader.linkProgram(program);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const modelName = urlParams.get('model');
-
     const uniforms = defaultShader.getUniformLocations(program);
-    const model = await loadModel(modelName ? modelName : 'waterbottle');
-    console.log(model);
 
-    render(program, uniforms, model);
+    const urlParams = new URLSearchParams(window.location.search);
+    const modelNames = urlParams.get('model') || 'waterbottle';
+    const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
+    console.log(models);
+
+    render(uniforms, models);
 };
 
 const rotate = (delta: inputs.Position) => {

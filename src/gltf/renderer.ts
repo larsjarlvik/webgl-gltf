@@ -21,7 +21,7 @@ const bindBuffer = (position: VaryingPosition, buffer: GLBuffer | null) => {
     return buffer;
 };
 
-const applyTexture = (texture: WebGLTexture, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
+const applyTexture = (texture: WebGLTexture | null, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
     if (texture) {
         gl.activeTexture(gl.TEXTURE0 + textureTarget);
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -40,11 +40,11 @@ const renderModel = (model: Model, node: number, transform: mat4, uniforms: Defa
         const material = model.materials[mesh.material];
 
         if (material) {
-            if (material.baseColorTexture) applyTexture(material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
-            if (material.roughnessTexture) applyTexture(material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
-            if (material.emissiveTexture) applyTexture(material.emissiveTexture, 3, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
-            if (material.normalTexture) applyTexture(material.normalTexture, 4, uniforms.normalTexture, uniforms.hasNormalTexture);
-            if (material.occlusionTexture) applyTexture(material.occlusionTexture, 5, uniforms.occlusionTexture, uniforms.hasOcclusionTexture);
+            applyTexture(material.baseColorTexture, 1, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
+            applyTexture(material.roughnessTexture, 2, uniforms.roughnessTexture, uniforms.hasRoughnessTexture);
+            applyTexture(material.emissiveTexture, 3, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
+            applyTexture(material.normalTexture, 4, uniforms.normalTexture, uniforms.hasNormalTexture);
+            applyTexture(material.occlusionTexture, 5, uniforms.occlusionTexture, uniforms.hasOcclusionTexture);
             if (material.baseColor) gl.uniform4f(uniforms.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
             if (material.roughnessMetallic) gl.uniform2f(uniforms.roughnessMetallic, material.roughnessMetallic[0], material.roughnessMetallic[1]);
         }
