@@ -2,7 +2,7 @@
 
 precision highp float;
 
-#define LIGHT_INTENSITY 2.0
+#define LIGHT_INTENSITY 1.0
 #define LIGHT_DIRECTION vec3(-0.7, -0.7, 1.0)
 #define LIGHT_COLOR vec3(1.0)
 #define M_PI 3.141592653589793
@@ -24,6 +24,10 @@ uniform int uHasNormalTexture;
 uniform sampler2D uOcclusionTexture;
 uniform int uHasOcclusionTexture;
 
+uniform sampler2D uBrdfLut;
+uniform samplerCube uEnvironmentDiffuse;
+uniform samplerCube uEnvironmentSpecular;
+
 uniform vec3 uCameraPosition;
 
 in vec2 texCoord;
@@ -39,6 +43,7 @@ struct MaterialInfo {
     vec3 diffuseColor;
     vec3 specularColor;
     vec3 reflectance90;
+    float perceptualRoughness;
 };
 
 
@@ -83,6 +88,27 @@ vec3 calculateDirectionalLight(MaterialInfo materialInfo, vec3 normal, vec3 view
     }
 
     return vec3(0.0);
+}
+
+vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
+    float NdotV = clamp(dot(n, v), 0.0, 1.0);
+
+    float lod = clamp(materialInfo.perceptualRoughness * 4.0, 0.0, 4.0);
+    vec3 reflection = normalize(reflect(-v, n));
+
+    vec2 brdfSamplePoint = clamp(vec2(NdotV, materialInfo.perceptualRoughness), vec2(0.0, 0.0), vec2(1.0, 1.0));
+
+    vec2 brdf = texture(uBrdfLut, brdfSamplePoint).rg;
+    vec4 diffuseSample = vec4(0.1, 0.1, 0.1, 1.0);
+    vec4 specularSample = vec4(0.3);
+
+    vec3 diffuseLight = srgbToLinear(texture(uEnvironmentDiffuse, n)).rgb;
+    vec3 specularLight = srgbToLinear(texture(uEnvironmentSpecular, n)).rgb;
+
+    vec3 diffuse = diffuseLight * materialInfo.diffuseColor;
+    vec3 specular = specularLight * (materialInfo.specularColor * brdf.x + brdf.y);
+
+    return diffuse + specular;
 }
 
 vec4 getBaseColor() {
@@ -134,7 +160,8 @@ MaterialInfo getMaterialInfo() {
         alphaRoughness,
         diffuseColor,
         specularColor,
-        reflectance90
+        reflectance90,
+        perceptualRoughness
     );
 }
 
@@ -149,6 +176,8 @@ void main() {
 
     vec3 view = normalize(uCameraPosition - position);
     vec3 color = calculateDirectionalLight(materialInfo, n, view);
+
+    color += getIBLContribution(materialInfo, n, view);
     color += getEmissive().rgb;
     color = clamp(color, 0.0, 1.0);
     color = mix(color, color * getOcclusion(), 1.0);

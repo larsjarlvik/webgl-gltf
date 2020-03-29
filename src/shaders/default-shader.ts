@@ -17,6 +17,9 @@ export interface DefaultShader {
     roughnessMetallic: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
     jointTransform: WebGLUniformLocation[];
+    brdfLut: WebGLUniformLocation;
+    environmentDiffuse: WebGLUniformLocation;
+    environmentSpecular: WebGLUniformLocation;
 }
 
 const getUniformLocations = (program: WebGLProgram): DefaultShader => {
@@ -43,6 +46,10 @@ const getUniformLocations = (program: WebGLProgram): DefaultShader => {
     const occlusionTexture = gl.getUniformLocation(program, 'uOcclusionTexture')!;
     const hasOcclusionTexture = gl.getUniformLocation(program, 'uHasOcclusionTexture')!;
 
+    const brdfLut = gl.getUniformLocation(program, 'uBrdfLut')!;
+    const environmentDiffuse = gl.getUniformLocation(program, 'uEnvironmentDiffuse')!;
+    const environmentSpecular = gl.getUniformLocation(program, 'uEnvironmentSpecular')!;
+
     const jointTransform: WebGLUniformLocation[] = [];
     for (let i = 0; i < 50; i ++) {
         jointTransform[i] = gl.getUniformLocation(program, `uJointTransform[${i}]`)!
@@ -67,6 +74,9 @@ const getUniformLocations = (program: WebGLProgram): DefaultShader => {
         roughnessMetallic,
         isAnimated,
         jointTransform,
+        brdfLut,
+        environmentDiffuse,
+        environmentSpecular,
     };
 };
 

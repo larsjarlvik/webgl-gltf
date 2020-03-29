@@ -2,6 +2,7 @@ import * as shader from 'shaders/shader-loader';
 import * as defaultShader from 'shaders/default-shader';
 import * as camera from 'camera';
 import * as inputs from 'inputs';
+import * as cubemap from 'cubemap';
 
 import { Model } from 'gltf/parsedMesh';
 import { loadModel } from 'gltf/gltf';
@@ -41,7 +42,6 @@ const render = (shader: DefaultShader, models: Model[]) => {
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
     });
 
-
     requestAnimationFrame(() => {
         render(shader, models);
     });
@@ -61,11 +61,14 @@ const startup = async () => {
 
     const uniforms = defaultShader.getUniformLocations(program);
 
+    const environment = await cubemap.load();
+
     const urlParams = new URLSearchParams(window.location.search);
     const modelNames = urlParams.get('model') || 'waterbottle';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
     console.log(models);
 
+    cubemap.bind(environment, uniforms.brdfLut, uniforms.environmentDiffuse, uniforms.environmentSpecular)
     render(uniforms, models);
 };
 
