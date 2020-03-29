@@ -57,9 +57,11 @@ const applyTransforms = (target: WebGLUniformLocation[], model: Model, transform
 
     const animatedTransform = mat4.create();
     const transformIndex = skin.joints.indexOf(node.id);
+    if (transformIndex >= 0) {
+        mat4.multiply(animatedTransform, matrix, skin.inverseBindTransforms[transformIndex]);
+        gl.uniformMatrix4fv(target[transformIndex], false, animatedTransform);
+    }
 
-    mat4.multiply(animatedTransform, matrix, skin.inverseBindTransforms[transformIndex]);
-    gl.uniformMatrix4fv(target[transformIndex], false, animatedTransform);
 
     node.children.forEach(childNode => {
         const childTransform = mat4.create();
@@ -92,7 +94,7 @@ const update = (model: Model, uniforms: DefaultShader) => {
     });
 
     model.skins.forEach(skin => {
-        const root = skin.skeleton !== undefined ? skin.skeleton : skin.joints[0];
+        const root = model.rootNode;
         applyTransforms(uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
     });
 
