@@ -1,7 +1,7 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation, Material as GlTfMaterial, Image } from 'types/gltf';
+import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation as GlTfAnimation, Material as GlTfMaterial, Image } from 'types/gltf';
 import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
-import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer } from './parsedMesh';
+import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './parsedMesh';
 
 const accessorSizes = {
     'SCALAR': 1,
@@ -101,7 +101,7 @@ const loadNodes = (index: number, node: GlTfNode): Node => {
     } as Node;
 };
 
-const loadAnimation = (animation: Animation, gltf: GlTf, buffers: ArrayBuffer[]) => {
+const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffer[]) => {
     const channels = animation.channels.map(c => {
         const sampler = animation.samplers[c.sampler];
         const time = readBufferFromFile(gltf, buffers, gltf.accessors![sampler.input]);
@@ -245,7 +245,9 @@ const loadModel = async (model: string) => {
 
     const rootNode = scene.nodes![0];
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
-    const channels = gltf.animations && gltf.animations.length > 0 ? loadAnimation(gltf.animations![0], gltf, buffers) : null;
+
+    const animations = {} as Animation;
+    gltf.animations?.forEach(anim => animations[anim.name as string] = loadAnimation(anim, gltf, buffers));
 
     const skins = gltf.skins ? gltf.skins.map(x => {
         const bindTransforms = readBufferFromFile(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
@@ -262,7 +264,7 @@ const loadModel = async (model: string) => {
         meshes,
         nodes,
         rootNode,
-        channels,
+        animations,
         skins,
         materials,
     } as Model;

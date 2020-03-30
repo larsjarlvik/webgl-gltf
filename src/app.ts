@@ -13,6 +13,8 @@ import { DefaultShader } from 'shaders/default-shader';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
+const activeAnimations = new Set()
+
 const cam = {
     rY: 0.0,
     rX: 0.0,
@@ -29,6 +31,20 @@ if (!gl) {
     alert('WebGL 2 not available')
 }
 
+const listAnimations = (model: Model) => {
+    const ui = document.getElementById('ui') as HTMLElement;
+    Object.keys(model.animations).forEach(a => {
+        const btn = document.createElement('button');
+        btn.innerText = a;
+        btn.addEventListener('touchstart', () => activeAnimations.add(a));
+        btn.addEventListener('touchend', () => activeAnimations.delete(a));
+        btn.addEventListener('mousedown', () => activeAnimations.add(a));
+        btn.addEventListener('mouseup', () => activeAnimations.delete(a));
+        btn.addEventListener('mouseout', () => activeAnimations.delete(a));
+        ui.appendChild(btn);
+    });
+};
+
 const render = (shader: DefaultShader, models: Model[]) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -38,7 +54,7 @@ const render = (shader: DefaultShader, models: Model[]) => {
     gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        update(model, shader);
+        update(model, model.animations[activeAnimations.values().next().value], shader);
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
     });
 
@@ -66,6 +82,8 @@ const startup = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const modelNames = urlParams.get('model') || 'waterbottle';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
+    listAnimations(models[0]);
+
     console.log(models);
 
     cubemap.bind(environment, uniforms.brdfLut, uniforms.environmentDiffuse, uniforms.environmentSpecular)

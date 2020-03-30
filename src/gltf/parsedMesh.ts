@@ -32,9 +32,13 @@ export interface Model {
     meshes: Mesh[];
     nodes: Node[];
     rootNode: number;
-    channels: Channel;
+    animations: Animation;
     skins: Skin[];
     materials: Material[];
+}
+
+export interface Animation {
+    [name: string]: Channel;
 }
 
 export interface Channel {

@@ -1,4 +1,4 @@
-import { Model, KeyFrame, Skin } from './parsedMesh';
+import { Model, KeyFrame, Skin, Channel } from './parsedMesh';
 import { mat4, vec3, quat } from 'gl-matrix';
 import { DefaultShader } from 'shaders/default-shader';
 
@@ -70,17 +70,17 @@ const applyTransforms = (target: WebGLUniformLocation[], model: Model, transform
     });
 };
 
-const update = (model: Model, uniforms: DefaultShader) => {
-    if (!model.channels) {
+const update = (model: Model, animation: Channel, uniforms: DefaultShader) => {
+    if (!animation) {
         gl.uniform1i(uniforms.isAnimated, 0);
         return;
     }
 
     const transforms: { [key: number]: mat4 } = {};
-    Object.keys(model.channels).forEach(c => {
-        const translation = model.channels[c].translation.length > 0 ? getTransform(model.channels[c].translation) : vec3.create();
-        const rotation = model.channels[c].rotation.length > 0 ? getTransform(model.channels[c].rotation) : quat.create();
-        const scale = model.channels[c].scale.length > 0 ? getTransform(model.channels[c].scale) : vec3.fromValues(1, 1, 1);
+    Object.keys(animation).forEach(c => {
+        const translation = animation[c].translation.length > 0 ? getTransform(animation[c].translation) : vec3.create();
+        const rotation = animation[c].rotation.length > 0 ? getTransform(animation[c].rotation) : quat.create();
+        const scale = animation[c].scale.length > 0 ? getTransform(animation[c].scale) : vec3.fromValues(1, 1, 1);
 
         const localTransform = mat4.create();
         const rotTransform = mat4.create();

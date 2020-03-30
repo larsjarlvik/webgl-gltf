@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>WebGL GLTF Viewer</title>
         <style>
             html, body {
@@ -8,7 +9,23 @@
                 overflow: hidden;
                 height: 100%;
             }
+
+            #ui {
+                position: fixed;
+                bottom: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            #ui button {
+                margin: 5px;
+                padding: 10px 20px;
+                user-select: none;
+            }
         </style>
     </head>
-    <body><canvas id="canvas"></canvas></body>
+    <body>
+        <canvas id="canvas"></canvas>
+        <div id="ui"></div>
+    </body>
 </html>
