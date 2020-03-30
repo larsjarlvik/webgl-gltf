@@ -30,7 +30,7 @@ module.exports = {
     output: {
         path: __dirname + '/dist',
         publicPath: '/',
-        filename: 'bundle.js',
+        filename: 'bundle.[hash].js',
     },
     plugins: [
         new HtmlWebpackPlugin({ template: './index.html' }),
