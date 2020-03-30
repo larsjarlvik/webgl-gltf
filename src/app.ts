@@ -23,6 +23,7 @@ const animationBlendTime = 300;
 let lastFrame = 0;
 
 const addAnimation = (key: string) => {
+    if (activeAnimations[activeAnimations.length - 1].key === key) return;
     activeAnimations.push({ key, duration: 0 });
 };
 
