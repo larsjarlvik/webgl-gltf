@@ -70,25 +70,38 @@ const applyTransforms = (target: WebGLUniformLocation[], model: Model, transform
     });
 };
 
-const update = (model: Model, animation: Channel, uniforms: DefaultShader) => {
-    if (!animation) {
+
+
+
+const update = (model: Model, uniforms: DefaultShader, a1?: Channel, a2?: Channel, blend = 0) => {
+    if (!a1) {
         gl.uniform1i(uniforms.isAnimated, 0);
         return;
     }
 
     const transforms: { [key: number]: mat4 } = {};
-    Object.keys(animation).forEach(c => {
-        const translation = animation[c].translation.length > 0 ? getTransform(animation[c].translation) : vec3.create();
-        const rotation = animation[c].rotation.length > 0 ? getTransform(animation[c].rotation) : quat.create();
-        const scale = animation[c].scale.length > 0 ? getTransform(animation[c].scale) : vec3.fromValues(1, 1, 1);
+    Object.keys(a1).forEach(c => {
+        const t1 = a1[c].translation.length > 0 ? getTransform(a1[c].translation) as vec3 : vec3.create();
+        const r1 = a1[c].rotation.length > 0 ? getTransform(a1[c].rotation) as quat : quat.create();
+        const s1 = a1[c].scale.length > 0 ? getTransform(a1[c].scale) as vec3 : vec3.fromValues(1, 1, 1);
+
+        if (a2 !== undefined) {
+            const t2 = getTransform(a2[c].translation) as vec3;
+            const r2 = getTransform(a2[c].rotation) as quat;
+            const s2 = getTransform(a2[c].scale) as vec3;
+
+            if (t2 !== undefined) vec3.lerp(t1, t1, t2, blend);
+            if (r2 !== undefined) quat.slerp(r1, r1, r2, blend);
+            if (s2 !== undefined) vec3.lerp(s1, s1, s2, blend);
+        }
 
         const localTransform = mat4.create();
         const rotTransform = mat4.create();
-        mat4.fromQuat(rotTransform, rotation as quat);
+        mat4.fromQuat(rotTransform, r1 as quat);
 
-        mat4.translate(localTransform, localTransform, translation as vec3);
+        mat4.translate(localTransform, localTransform, t1 as vec3);
         mat4.multiply(localTransform, localTransform, rotTransform);
-        mat4.scale(localTransform, localTransform, scale as vec3);
+        mat4.scale(localTransform, localTransform, s1 as vec3);
 
         transforms[c] = localTransform;
     });

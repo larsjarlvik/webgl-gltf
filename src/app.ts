@@ -13,7 +13,14 @@ import { DefaultShader } from 'shaders/default-shader';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
-const activeAnimations = new Set()
+const activeAnimations: string[] = [];
+const animationBlendTime = 300;
+let lastAnimation = 0;
+
+const addAnimation = (animation: string) => {
+    activeAnimations.push(animation);
+    lastAnimation = performance.now();
+};
 
 const cam = {
     rY: 0.0,
@@ -36,12 +43,15 @@ const listAnimations = (model: Model) => {
     Object.keys(model.animations).forEach(a => {
         const btn = document.createElement('button');
         btn.innerText = a;
-        btn.addEventListener('touchstart', () => activeAnimations.add(a));
-        btn.addEventListener('touchend', () => activeAnimations.delete(a));
-        btn.addEventListener('mousedown', () => activeAnimations.add(a));
-        btn.addEventListener('mouseup', () => activeAnimations.delete(a));
-        btn.addEventListener('mouseout', () => activeAnimations.delete(a));
+        btn.addEventListener('touchstart', () => addAnimation(a));
+        btn.addEventListener('mousedown', () => addAnimation(a));
         ui.appendChild(btn);
+    });
+
+    document.addEventListener('keydown', e => {
+        const a = Object.keys(model.animations)[parseInt(e.key) - 1];
+        if (!a) return;
+        addAnimation(a);
     });
 };
 
@@ -54,7 +64,11 @@ const render = (shader: DefaultShader, models: Model[]) => {
     gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        update(model, model.animations[activeAnimations.values().next().value], shader);
+        const blend = performance.now() - lastAnimation;
+        const a1 = model.animations[activeAnimations[activeAnimations.length - 1]];
+        const a2 = blend <= animationBlendTime ? model.animations[activeAnimations[activeAnimations.length - 2]] : undefined;
+
+        update(model, shader, a1, a2, 1.0 - (blend / animationBlendTime));
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
     });
 
@@ -78,11 +92,12 @@ const startup = async () => {
     const uniforms = defaultShader.getUniformLocations(program);
 
     const environment = await cubemap.load();
-
     const urlParams = new URLSearchParams(window.location.search);
     const modelNames = urlParams.get('model') || 'waterbottle';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
     listAnimations(models[0]);
+
+    if (Object.keys(models[0].animations).length > 0) activeAnimations.push(Object.keys(models[0].animations)[0]);
 
     console.log(models);
 
