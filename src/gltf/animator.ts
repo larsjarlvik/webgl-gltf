@@ -22,8 +22,8 @@ const calculateProgression = (previous: KeyFrame, next: KeyFrame, animationTime:
     return currentTime / (next.time - previous.time);
 };
 
-const getTransform = (keyFrames: KeyFrame[]) => {
-    const animationTime = performance.now() / 1000.0 % keyFrames[keyFrames.length - 1].time;
+const getTransform = (keyFrames: KeyFrame[], duration: number) => {
+    const animationTime = duration / 1000.0 % keyFrames[keyFrames.length - 1].time;
     const frames = getPreviousAndNextKeyFrame(keyFrames, animationTime);
     const progression = calculateProgression(frames.previous, frames.next, animationTime);
 
@@ -73,22 +73,24 @@ const applyTransforms = (target: WebGLUniformLocation[], model: Model, transform
 
 
 
-const update = (model: Model, uniforms: DefaultShader, a1?: Channel, a2?: Channel, blend = 0) => {
-    if (!a1) {
+const update = (model: Model, uniforms: DefaultShader, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
+    if (!a1 || d1 === undefined) {
         gl.uniform1i(uniforms.isAnimated, 0);
         return;
     }
 
     const transforms: { [key: number]: mat4 } = {};
-    Object.keys(a1).forEach(c => {
-        const t1 = a1[c].translation.length > 0 ? getTransform(a1[c].translation) as vec3 : vec3.create();
-        const r1 = a1[c].rotation.length > 0 ? getTransform(a1[c].rotation) as quat : quat.create();
-        const s1 = a1[c].scale.length > 0 ? getTransform(a1[c].scale) as vec3 : vec3.fromValues(1, 1, 1);
 
-        if (a2 !== undefined) {
-            const t2 = getTransform(a2[c].translation) as vec3;
-            const r2 = getTransform(a2[c].rotation) as quat;
-            const s2 = getTransform(a2[c].scale) as vec3;
+    Object.keys(a1).forEach(c => {
+        const t1 = a1[c].translation.length > 0 ? getTransform(a1[c].translation, d1) as vec3 : vec3.create();
+        const r1 = a1[c].rotation.length > 0 ? getTransform(a1[c].rotation, d1) as quat : quat.create();
+        const s1 = a1[c].scale.length > 0 ? getTransform(a1[c].scale, d1) as vec3 : vec3.fromValues(1, 1, 1);
+
+        const blend = -((d1 - blendTime) / blendTime);
+        if (a2 && d2 !== undefined && blend > 0) {
+            const t2 = getTransform(a2[c].translation, d2) as vec3;
+            const r2 = getTransform(a2[c].rotation, d2) as quat;
+            const s2 = getTransform(a2[c].scale, d2) as vec3;
 
             if (t2 !== undefined) vec3.lerp(t1, t1, t2, blend);
             if (r2 !== undefined) quat.slerp(r1, r1, r2, blend);

@@ -13,13 +13,17 @@ import { DefaultShader } from 'shaders/default-shader';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
-const activeAnimations: string[] = [];
-const animationBlendTime = 300;
-let lastAnimation = 0;
+interface ActiveAnimation {
+    key: string;
+    duration: number;
+}
 
-const addAnimation = (animation: string) => {
-    activeAnimations.push(animation);
-    lastAnimation = performance.now();
+const activeAnimations: ActiveAnimation[] = [];
+const animationBlendTime = 300;
+let lastFrame = 0;
+
+const addAnimation = (key: string) => {
+    activeAnimations.push({ key, duration: 0 });
 };
 
 const cam = {
@@ -43,8 +47,7 @@ const listAnimations = (model: Model) => {
     Object.keys(model.animations).forEach(a => {
         const btn = document.createElement('button');
         btn.innerText = a;
-        btn.addEventListener('touchstart', () => addAnimation(a));
-        btn.addEventListener('mousedown', () => addAnimation(a));
+        btn.addEventListener('click', () => addAnimation(a));
         ui.appendChild(btn);
     });
 
@@ -64,16 +67,19 @@ const render = (shader: DefaultShader, models: Model[]) => {
     gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        const blend = performance.now() - lastAnimation;
-        const a1 = model.animations[activeAnimations[activeAnimations.length - 1]];
-        const a2 = blend <= animationBlendTime ? model.animations[activeAnimations[activeAnimations.length - 2]] : undefined;
+        const a1 = activeAnimations[activeAnimations.length - 1];
+        const a2 = activeAnimations[activeAnimations.length - 2];
 
-        update(model, shader, a1, a2, 1.0 - (blend / animationBlendTime));
+        update(model, shader, model.animations[a1?.key], model.animations[a2?.key], a1?.duration, a2?.duration, animationBlendTime);
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
+
+        if (a1) a1.duration += performance.now() - lastFrame;
+        if (a2) a2.duration += performance.now() - lastFrame;
     });
 
     requestAnimationFrame(() => {
         render(shader, models);
+        lastFrame = performance.now();
     });
 };
 
@@ -97,7 +103,10 @@ const startup = async () => {
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
     listAnimations(models[0]);
 
-    if (Object.keys(models[0].animations).length > 0) activeAnimations.push(Object.keys(models[0].animations)[0]);
+    if (Object.keys(models[0].animations).length > 0) activeAnimations.push({
+        key: Object.keys(models[0].animations)[0],
+        duration: performance.now(),
+    });
 
     console.log(models);
 
