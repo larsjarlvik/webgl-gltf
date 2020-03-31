@@ -91,7 +91,7 @@ const startup = async () => {
 
     const environment = await cubemap.load();
     const urlParams = new URLSearchParams(window.location.search);
-    const modelNames = urlParams.get('model') || 'waterbottle';
+    const modelNames = urlParams.get('model') || 'robot';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
 
     listAnimations(models);

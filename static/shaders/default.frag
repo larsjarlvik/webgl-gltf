@@ -102,8 +102,8 @@ vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
     vec4 diffuseSample = vec4(0.1, 0.1, 0.1, 1.0);
     vec4 specularSample = vec4(0.3);
 
-    vec3 diffuseLight = srgbToLinear(texture(uEnvironmentDiffuse, n)).rgb;
-    vec3 specularLight = srgbToLinear(texture(uEnvironmentSpecular, n)).rgb;
+    vec3 diffuseLight = srgbToLinear(texture(uEnvironmentDiffuse, n)).rgb * 0.1;
+    vec3 specularLight = srgbToLinear(texture(uEnvironmentSpecular, n)).rgb * 0.2;
 
     vec3 diffuse = diffuseLight * materialInfo.diffuseColor;
     vec3 specular = specularLight * (materialInfo.specularColor * brdf.x + brdf.y);
