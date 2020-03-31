@@ -103,8 +103,8 @@ const startup = async () => {
 };
 
 const rotate = (delta: inputs.Position) => {
-    cam.rX -= delta.x;
-    cam.rY -= delta.y;
+    cam.rX += delta.y;
+    cam.rY += delta.x;
 };
 
 const zoom = (delta: number) => {
