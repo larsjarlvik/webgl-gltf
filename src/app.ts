@@ -93,12 +93,13 @@ const startup = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const modelNames = urlParams.get('model') || 'robot';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
-
     listAnimations(models);
-
     console.log(models);
 
-    cubemap.bind(environment, uniforms.brdfLut, uniforms.environmentDiffuse, uniforms.environmentSpecular)
+    cubemap.bind(environment, uniforms.brdfLut, uniforms.environmentDiffuse, uniforms.environmentSpecular);
+
+    document.getElementById('loading')?.remove();
+
     render(uniforms, models);
 };
 

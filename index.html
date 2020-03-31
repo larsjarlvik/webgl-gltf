@@ -8,6 +8,7 @@
                 margin: 0;
                 overflow: hidden;
                 height: 100%;
+                background: #4d4d4d;
             }
 
             #ui {
@@ -23,9 +24,26 @@
                 padding: 10px 20px;
                 user-select: none;
             }
+
+            #loading {
+                position: fixed;
+                left: calc(50% - 38px);
+                top: 30%;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                border: 6px solid #fff;
+                border-color: #fff transparent #fff transparent;
+                animation: loading 1.2s linear infinite;
+            }
+            @keyframes loading {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
         </style>
     </head>
     <body>
+        <div id="loading"></div>
         <canvas id="canvas"></canvas>
         <div id="ui"></div>
     </body>
