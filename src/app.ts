@@ -3,6 +3,7 @@ import * as defaultShader from 'shaders/default-shader';
 import * as camera from 'camera';
 import * as inputs from 'inputs';
 import * as cubemap from 'cubemap';
+import * as animations from 'animation';
 
 import { Model } from 'gltf/parsedMesh';
 import { loadModel } from 'gltf/gltf';
@@ -13,19 +14,7 @@ import { DefaultShader } from 'shaders/default-shader';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 window['gl'] = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
-interface ActiveAnimation {
-    key: string;
-    duration: number;
-}
-
-const activeAnimations: ActiveAnimation[] = [];
-const animationBlendTime = 300;
 let lastFrame = 0;
-
-const addAnimation = (key: string) => {
-    if (activeAnimations[activeAnimations.length - 1].key === key) return;
-    activeAnimations.push({ key, duration: 0 });
-};
 
 const cam = {
     rY: 0.0,
@@ -43,19 +32,19 @@ if (!gl) {
     alert('WebGL 2 not available')
 }
 
-const listAnimations = (model: Model) => {
-    const ui = document.getElementById('ui') as HTMLElement;
-    Object.keys(model.animations).forEach(a => {
-        const btn = document.createElement('button');
-        btn.innerText = a;
-        btn.addEventListener('click', () => addAnimation(a));
-        ui.appendChild(btn);
-    });
+const listAnimations = (models: Model[]) => {
+    models.forEach(model => {
+        if (Object.keys(model.animations).length === 0) return;
 
-    document.addEventListener('keydown', e => {
-        const a = Object.keys(model.animations)[parseInt(e.key) - 1];
-        if (!a) return;
-        addAnimation(a);
+        animations.pushAnimation(model.name, Object.keys(model.animations)[0]);
+
+        const ui = document.getElementById('ui') as HTMLElement;
+        Object.keys(model.animations).forEach(a => {
+            const btn = document.createElement('button');
+            btn.innerText = a;
+            btn.addEventListener('click', () => animations.pushAnimation(model.name, a));
+            ui.appendChild(btn);
+        });
     });
 };
 
@@ -68,15 +57,17 @@ const render = (shader: DefaultShader, models: Model[]) => {
     gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        const a1 = activeAnimations[activeAnimations.length - 1];
-        const a2 = activeAnimations[activeAnimations.length - 2];
+        const animation = animations.getActiveAnimations(model);
 
-        update(model, shader, model.animations[a1?.key], model.animations[a2?.key], a1?.duration, a2?.duration, animationBlendTime);
+        update(model, shader,
+            animation.current, animation.previous,
+            animation.currentDuration, animation.previousDuration,
+            animations.blendTime
+        );
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
-
-        if (a1) a1.duration += performance.now() - lastFrame;
-        if (a2) a2.duration += performance.now() - lastFrame;
     });
+
+    animations.update(performance.now() - lastFrame);
 
     requestAnimationFrame(() => {
         render(shader, models);
@@ -102,12 +93,8 @@ const startup = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const modelNames = urlParams.get('model') || 'waterbottle';
     const models = await Promise.all(modelNames.split(',').map(m => loadModel(m)));
-    listAnimations(models[0]);
 
-    if (Object.keys(models[0].animations).length > 0) activeAnimations.push({
-        key: Object.keys(models[0].animations)[0],
-        duration: performance.now(),
-    });
+    listAnimations(models);
 
     console.log(models);
 

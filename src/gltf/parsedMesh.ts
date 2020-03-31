@@ -29,6 +29,7 @@ export interface Skin {
 }
 
 export interface Model {
+    name: string;
     meshes: Mesh[];
     nodes: Node[];
     rootNode: number;

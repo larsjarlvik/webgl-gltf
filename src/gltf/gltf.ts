@@ -261,6 +261,7 @@ const loadModel = async (model: string) => {
     }) : [] as Skin[];
 
     return {
+        name: model,
         meshes,
         nodes,
         rootNode,
