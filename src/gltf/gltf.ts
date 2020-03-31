@@ -1,4 +1,4 @@
-import { GlTf, Mesh as GlTfMesh, Node as GlTfNode, Accessor, Animation as GlTfAnimation, Material as GlTfMaterial, Image } from 'types/gltf';
+import * as gltf from 'types/gltf';
 import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
 import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './parsedMesh';
@@ -44,7 +44,7 @@ const getTexture = async (uri: string) => {
     });
 };
 
-const readBufferFromFile = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Accessor) => {
+const readBufferFromFile = (gltf: gltf.GlTf, buffers: ArrayBuffer[], accessor: gltf.Accessor) => {
     const bufferView = gltf.bufferViews![accessor.bufferView as number];
     const size = accessorSizes[accessor.type];
     const componentType = accessor.componentType as BufferType;
@@ -62,7 +62,7 @@ const readBufferFromFile = (gltf: GlTf, buffers: ArrayBuffer[], accessor: Access
     } as Buffer;
 };
 
-const getBufferFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, name: string) => {
+const getBufferFromName = (gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
     if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
@@ -82,7 +82,7 @@ const getBufferFromName = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh, n
     } as GLBuffer;
 };
 
-const loadNodes = (index: number, node: GlTfNode): Node => {
+const loadNodes = (index: number, node: gltf.Node): Node => {
     const transform = mat4.create();
 
     if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
@@ -101,7 +101,7 @@ const loadNodes = (index: number, node: GlTfNode): Node => {
     } as Node;
 };
 
-const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffer[]) => {
+const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: ArrayBuffer[]) => {
     const channels = animation.channels.map(c => {
         const sampler = animation.samplers[c.sampler];
         const time = readBufferFromFile(gltf, buffers, gltf.accessors![sampler.input]);
@@ -151,7 +151,7 @@ const loadAnimation = (animation: GlTfAnimation, gltf: GlTf, buffers: ArrayBuffe
     return c;
 };
 
-const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
+const loadMesh = (gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
     const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
     const indexArray = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
 
@@ -172,7 +172,7 @@ const loadMesh = (gltf: GlTf, buffers: ArrayBuffer[], mesh: GlTfMesh) => {
     } as Mesh;
 };
 
-const loadMaterial = async (material: GlTfMaterial, model: string, images?: Image[]): Promise<Material> => {
+const loadMaterial = async (material: gltf.Material, model: string, images?: gltf.Image[]): Promise<Material> => {
     let baseColorTexture: WebGLTexture | null = null;
     let roughnessTexture: WebGLTexture | null = null;
     let emissiveTexture: WebGLTexture | null = null;
@@ -229,7 +229,7 @@ const loadMaterial = async (material: GlTfMaterial, model: string, images?: Imag
 
 const loadModel = async (model: string) => {
     const response = await fetch(`/models/${model}/${model}.gltf`);
-    const gltf = await response.json() as GlTf;
+    const gltf = await response.json() as gltf.GlTf;
 
     if (gltf.accessors === undefined || gltf.accessors.length === 0) {
         throw new Error('GLTF File is missing accessors')
@@ -240,14 +240,14 @@ const loadModel = async (model: string) => {
     ));
 
     const scene = gltf.scenes![gltf.scene || 0];
-    const meshes = gltf.meshes!.map(m => loadMesh(gltf, buffers, m));
+    const meshes = gltf.meshes!.map(m => loadMesh(gltf, m, buffers));
     const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(m, model, gltf.images))) : [];
 
     const rootNode = scene.nodes![0];
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
 
     const animations = {} as Animation;
-    gltf.animations?.forEach(anim => animations[anim.name as string] = loadAnimation(anim, gltf, buffers));
+    gltf.animations?.forEach(anim => animations[anim.name as string] = loadAnimation(gltf, anim, buffers));
 
     const skins = gltf.skins ? gltf.skins.map(x => {
         const bindTransforms = readBufferFromFile(gltf, buffers, gltf.accessors![x.inverseBindMatrices!]);
