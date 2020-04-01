@@ -1,0 +1,172 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.1.45",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Cylinder",
+            "translation" : [
+                0,
+                -0.051240984350442886,
+                0
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "emissiveFactor" : [
+                0,
+                0,
+                0
+            ],
+            "name" : "Material.001",
+            "normalTexture" : {
+                "index" : 0,
+                "texCoord" : 0
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 1,
+                    "texCoord" : 0
+                },
+                "metallicFactor" : 0,
+                "metallicRoughnessTexture" : {
+                    "index" : 2,
+                    "texCoord" : 0
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Cylinder",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TANGENT" : 2,
+                        "TEXCOORD_0" : 3
+                    },
+                    "indices" : 4,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "source" : 0
+        },
+        {
+            "source" : 1
+        },
+        {
+            "source" : 2
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "platform_normal",
+            "uri" : "platform_normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "platform_baseColor",
+            "uri" : "platform_baseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "platform_occlusionRoughnessMetallic",
+            "uri" : "platform_occlusionRoughnessMetallic.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 318,
+            "max" : [
+                1.3858191967010498,
+                0.05000000074505806,
+                1.3858191967010498
+            ],
+            "min" : [
+                -1.385819435119629,
+                -0.05000000447034836,
+                -1.3858193159103394
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 318,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 318,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 318,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5123,
+            "count" : 324,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 3816,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 3816,
+            "byteOffset" : 3816
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 5088,
+            "byteOffset" : 7632
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 2544,
+            "byteOffset" : 12720
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 648,
+            "byteOffset" : 15264
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 15912,
+            "uri" : "platform.bin"
+        }
+    ]
+}

@@ -1,6 +1,5 @@
-import { Model, KeyFrame, Skin, Channel } from './parsedMesh';
+import { Model, KeyFrame, Skin, Channel } from './types/model';
 import { mat4, vec3, quat } from 'gl-matrix';
-import { DefaultShader } from 'shaders/default-shader';
 
 const getPreviousAndNextKeyFrame = (keyFrames: KeyFrame[], animationTime: number) => {
     let next = keyFrames[0];
@@ -48,7 +47,7 @@ interface Transform {
     [key: number]: mat4;
 }
 
-const applyTransforms = (target: WebGLUniformLocation[], model: Model, transforms: Transform, matrix: mat4, skin: Skin, nodeIndex: number) => {
+const applyTransforms = (appliedTransforms: mat4[], model: Model, transforms: Transform, matrix: mat4, skin: Skin, nodeIndex: number) => {
     const node = model.nodes[nodeIndex];
 
     if (transforms[node.id] !== undefined) {
@@ -59,24 +58,19 @@ const applyTransforms = (target: WebGLUniformLocation[], model: Model, transform
     const transformIndex = skin.joints.indexOf(node.id);
     if (transformIndex >= 0) {
         mat4.multiply(animatedTransform, matrix, skin.inverseBindTransforms[transformIndex]);
-        gl.uniformMatrix4fv(target[transformIndex], false, animatedTransform);
+        appliedTransforms[transformIndex] = animatedTransform;
     }
-
 
     node.children.forEach(childNode => {
         const childTransform = mat4.create();
         mat4.copy(childTransform, matrix);
-        applyTransforms(target, model, transforms, childTransform, skin, childNode);
+        applyTransforms(appliedTransforms, model, transforms, childTransform, skin, childNode);
     });
 };
 
-
-
-
-const update = (model: Model, uniforms: DefaultShader, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
+const update = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
     if (!a1 || d1 === undefined) {
-        gl.uniform1i(uniforms.isAnimated, 0);
-        return;
+        return null;
     }
 
     const transforms: { [key: number]: mat4 } = {};
@@ -108,12 +102,13 @@ const update = (model: Model, uniforms: DefaultShader, a1?: Channel, a2?: Channe
         transforms[c] = localTransform;
     });
 
+    const appliedTransforms: mat4[] = [];
     model.skins.forEach(skin => {
         const root = model.rootNode;
-        applyTransforms(uniforms.jointTransform, model, transforms, mat4.create(), skin, root);
+        applyTransforms(appliedTransforms, model, transforms, mat4.create(), skin, root);
     });
 
-    gl.uniform1i(uniforms.isAnimated, 1);
+    return appliedTransforms;
 };
 
 export {

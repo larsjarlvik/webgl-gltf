@@ -1,7 +1,7 @@
-import * as gltf from 'types/gltf';
+import * as gltf from './types/gltf';
 import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
-import { createMat4FromArray, applyRotationFromQuat } from 'utils/mat';
-import { Channel, Buffer, BufferType, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './parsedMesh';
+import { createMat4FromArray, applyRotationFromQuat } from './mat';
+import { Channel, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './types/model';
 
 const accessorSizes = {
     'SCALAR': 1,
@@ -12,6 +12,19 @@ const accessorSizes = {
     'MAT3': 9,
     'MAT4': 16
 };
+
+export interface Buffer {
+    data: Float32Array | Int16Array;
+    size: number;
+    type: string;
+    componentType: BufferType;
+    glBuffer: WebGLBuffer;
+}
+
+export enum BufferType {
+    Float = 5126,
+    Short = 5123,
+}
 
 const getBuffer = async (model: string, buffer: string) => {
     const response = await fetch(`/models/${model}/${buffer}`);

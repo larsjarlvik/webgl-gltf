@@ -34,7 +34,6 @@ const listen = (canvas: HTMLCanvasElement, drag: (rotation: Position) => void, z
         };
     };
 
-
     canvas.addEventListener('wheel', (event) => {
         zoom(event.deltaY > 0 ? 0.05: -0.05);
     });

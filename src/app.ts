@@ -3,12 +3,13 @@ import * as defaultShader from 'shaders/default-shader';
 import * as camera from 'camera';
 import * as inputs from 'inputs';
 import * as cubemap from 'cubemap';
-import * as animations from 'animation';
+import { renderModel } from 'renderer';
 
-import { Model } from 'gltf/parsedMesh';
+import * as animations from 'gltf/animation';
+import { Model } from 'gltf/types/model';
 import { loadModel } from 'gltf/gltf';
-import { update } from 'gltf/animator';
-import { renderModel } from 'gltf/renderer';
+import { update as getAnimationTransforms } from 'gltf/animator';
+
 import { DefaultShader } from 'shaders/default-shader';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -58,12 +59,19 @@ const render = (shader: DefaultShader, models: Model[]) => {
 
     models.forEach(model => {
         const animation = animations.getActiveAnimations(model);
-
-        update(model, shader,
+        const animationTransforms = getAnimationTransforms(model,
             animation.current, animation.previous,
             animation.currentDuration, animation.previousDuration,
             animations.blendTime
         );
+
+        if (animationTransforms !== null) {
+            animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(shader.jointTransform[i], false, x); });
+            gl.uniform1i(shader.isAnimated, 1);
+        } else {
+            gl.uniform1i(shader.isAnimated, 0);
+        }
+
         renderModel(model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
     });
 
