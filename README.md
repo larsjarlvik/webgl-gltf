@@ -28,6 +28,9 @@ Please see the wiki for documentation
 * Waterbottle: https://larsjarlvik.github.io/?model=waterbottle
 * Cesium man (animation): https://larsjarlvik.github.io/?model=cesium
 
+## Installation
+* `npm install webgl-gltf`
+
 ## Run example code
 * `npm install`
 * `npm run start`
