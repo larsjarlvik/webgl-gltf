@@ -5,7 +5,7 @@
         "module": "esnext",
         "moduleResolution": "node",
         "outDir": "../dist",
-        "baseUrl": "gltf",
+        "baseUrl": "webgl-gltf",
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
         "strictNullChecks": true,

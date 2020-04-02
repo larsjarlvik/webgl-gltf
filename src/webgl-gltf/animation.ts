@@ -19,6 +19,11 @@ const getAnimationFromLast = (model: string, offset = 0) => {
     return activeAnimations[model][activeAnimations[model].length - offset - 1];
 }
 
+/**
+ * Sets the active animation
+ * @param model GLTF Model
+ * @param animation Animation key
+ */
 const pushAnimation = (model: string, animation: string) => {
     if (!activeAnimations[model]) activeAnimations[model] = [];
     if (getAnimationFromLast(model)?.key === animation) return;
@@ -31,6 +36,10 @@ const pushAnimation = (model: string, animation: string) => {
     activeAnimations[model].slice(activeAnimations[model].length - 2);
 };
 
+/**
+ * Gets the current and previous animation
+ * @param model GLTF Model
+ */
 const getActiveAnimations = (model: Model) => {
     const currentAA = getAnimationFromLast(model.name);
     const previousAA = getAnimationFromLast(model.name, 1);
@@ -46,6 +55,10 @@ const getActiveAnimations = (model: Model) => {
     };
 };
 
+/**
+ * Advances the animation
+ * @param elapsed Time elasped since last update
+ */
 const advanceAnimation = (elapsed: number) => {
     Object.keys(activeAnimations).forEach(m => {
         const current = getAnimationFromLast(m);

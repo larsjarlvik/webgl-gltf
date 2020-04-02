@@ -242,8 +242,13 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material,
     } as Material;
 };
 
-const loadModel = async (gl: WebGL2RenderingContext, path: string) => {
-    const response = await fetch(path);
+/**
+ * Loads a GLTF model and its assets
+ * @param gl Web GL context
+ * @param uri URI to model
+ */
+const loadModel = async (gl: WebGL2RenderingContext, uri: string) => {
+    const response = await fetch(uri);
     const gltf = await response.json() as gltf.GlTf;
 
     if (gltf.accessors === undefined || gltf.accessors.length === 0) {
@@ -251,12 +256,12 @@ const loadModel = async (gl: WebGL2RenderingContext, path: string) => {
     }
 
     const buffers = await Promise.all(
-        gltf.buffers!.map(async (b) => await getBuffer(path, b.uri!)
+        gltf.buffers!.map(async (b) => await getBuffer(uri, b.uri!)
     ));
 
     const scene = gltf.scenes![gltf.scene || 0];
     const meshes = gltf.meshes!.map(m => loadMesh(gl, gltf, m, buffers));
-    const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(gl, m, path, gltf.images))) : [];
+    const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(gl, m, uri, gltf.images))) : [];
 
     const rootNode = scene.nodes![0];
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
@@ -275,7 +280,7 @@ const loadModel = async (gl: WebGL2RenderingContext, path: string) => {
         };
     }) : [] as Skin[];
 
-    const name = path.split('/').slice(-1)[0];
+    const name = uri.split('/').slice(-1)[0];
     return {
         name,
         meshes,

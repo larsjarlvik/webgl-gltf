@@ -68,23 +68,33 @@ const applyTransforms = (appliedTransforms: mat4[], model: Model, transforms: Tr
     });
 };
 
-const getTransforms = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
-    if (!a1 || d1 === undefined) {
+
+/**
+ * Blends two animations and returns their transform matrices
+ * @param model GLTF Model
+ * @param current Current animation
+ * @param currentElapsed Elapsed time for current animation
+ * @param previous Previous animation
+ * @param previouseElapsed Elapsed time for previous animation
+ * @param blendTime How long the blend should be in milliseconds
+ */
+const getAnimationTransforms = (model: Model, current?: Channel, currentElapsed?: number, previous?: Channel, previouseElapsed?: number, blendTime = 0) => {
+    if (!current || currentElapsed === undefined) {
         return null;
     }
 
     const transforms: { [key: number]: mat4 } = {};
 
-    Object.keys(a1).forEach(c => {
-        const t1 = a1[c].translation.length > 0 ? getTransform(a1[c].translation, d1) as vec3 : vec3.create();
-        const r1 = a1[c].rotation.length > 0 ? getTransform(a1[c].rotation, d1) as quat : quat.create();
-        const s1 = a1[c].scale.length > 0 ? getTransform(a1[c].scale, d1) as vec3 : vec3.fromValues(1, 1, 1);
+    Object.keys(current).forEach(c => {
+        const t1 = current[c].translation.length > 0 ? getTransform(current[c].translation, currentElapsed) as vec3 : vec3.create();
+        const r1 = current[c].rotation.length > 0 ? getTransform(current[c].rotation, currentElapsed) as quat : quat.create();
+        const s1 = current[c].scale.length > 0 ? getTransform(current[c].scale, currentElapsed) as vec3 : vec3.fromValues(1, 1, 1);
 
-        const blend = -((d1 - blendTime) / blendTime);
-        if (a2 && d2 !== undefined && blend > 0) {
-            const t2 = getTransform(a2[c].translation, d2) as vec3;
-            const r2 = getTransform(a2[c].rotation, d2) as quat;
-            const s2 = getTransform(a2[c].scale, d2) as vec3;
+        const blend = -((currentElapsed - blendTime) / blendTime);
+        if (previous && previouseElapsed !== undefined && blend > 0) {
+            const t2 = getTransform(previous[c].translation, previouseElapsed) as vec3;
+            const r2 = getTransform(previous[c].rotation, previouseElapsed) as quat;
+            const s2 = getTransform(previous[c].scale, previouseElapsed) as vec3;
 
             if (t2 !== undefined) vec3.lerp(t1, t1, t2, blend);
             if (r2 !== undefined) quat.slerp(r1, r1, r2, blend);
@@ -112,5 +122,5 @@ const getTransforms = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2
 };
 
 export {
-    getTransforms,
+    getAnimationTransforms,
 };

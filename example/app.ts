@@ -6,7 +6,7 @@ import * as cubemap from './cubemap';
 import { renderModel } from './renderer';
 import { DefaultShader } from './shaders/default-shader';
 
-import * as gltf from 'gltf';
+import * as gltf from 'webgl-gltf';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
@@ -56,9 +56,9 @@ const render = (shader: DefaultShader, models: gltf.Model[]) => {
 
     models.forEach(model => {
         const animation = gltf.getActiveAnimations(model);
-        const animationTransforms = gltf.getTransforms(model,
-            animation.current, animation.previous,
-            animation.currentDuration, animation.previousDuration,
+        const animationTransforms = gltf.getAnimationTransforms(model,
+            animation.current, animation.currentDuration,
+            animation.previous, animation.previousDuration,
             blendTime
         );
 

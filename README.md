@@ -1,11 +1,16 @@
 # webgl-gltf
-A basic GLTF loader For WebGL (**alpha!**). Only depends on *gl-matrix*.
+A small GLTF loader For WebGL (**alpha!**). Only depends on *gl-matrix*.
 
 Requires WebGL 2 to run.
 
 Please see example folder for implementation.
 
+## Documentation
+Please see the wiki for documentation
+[Wiki](https://github.com/larsjarlvik/webgl-gltf/wiki)
+
 ## Supports
+* Multiple meshes
 * Textures
 * PBR materials (base color, metal-roughness, normal, occlusion and emissive)
 * Animations
@@ -15,7 +20,6 @@ Please see example folder for implementation.
 ## Does NOT support
 * Fully binary (`.glb`) files
 * GLTF with embedded data
-* Multiple root meshes (TODO)
 * Any GLTF extensions
 * And probably a lot more...
 

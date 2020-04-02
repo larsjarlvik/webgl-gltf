@@ -1,5 +1,5 @@
 export { loadModel } from './gltf';
-export { getTransforms } from './animator';
+export { getAnimationTransforms } from './animator';
 
 export {
     pushAnimation,

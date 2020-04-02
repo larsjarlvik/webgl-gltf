@@ -1,5 +1,5 @@
 import { mat4 } from 'gl-matrix';
-import { Model, GLBuffer } from 'gltf';
+import { Model, GLBuffer } from 'webgl-gltf';
 import { DefaultShader } from './shaders/default-shader';
 
 enum VaryingPosition {
