@@ -26,15 +26,16 @@ export enum BufferType {
     Short = 5123,
 }
 
-const getBuffer = async (model: string, buffer: string) => {
-    const response = await fetch(`/models/${model}/${buffer}`);
+const getBuffer = async (path: string, buffer: string) => {
+    const dir = path.split('/').slice(0,-1).join('/');
+    const response = await fetch(`${dir}/${buffer}`);
     const blob = await response.blob();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await (blob as any).arrayBuffer();
 };
 
-const getTexture = async (uri: string) => {
+const getTexture = async (gl: WebGL2RenderingContext, uri: string) => {
     return new Promise<WebGLTexture>(resolve => {
         const img = new Image();
         img.onload = () => {
@@ -75,7 +76,7 @@ const readBufferFromFile = (gltf: gltf.GlTf, buffers: ArrayBuffer[], accessor: g
     } as Buffer;
 };
 
-const getBufferFromName = (gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
+const getBufferFromName = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
     if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
@@ -164,7 +165,7 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
     return c;
 };
 
-const loadMesh = (gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
+const loadMesh = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
     const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
     const indexArray = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
 
@@ -175,17 +176,18 @@ const loadMesh = (gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
     return {
         indices,
         elements: indexArray.length,
-        positions: getBufferFromName(gltf, buffers, mesh, 'POSITION'),
-        normals: getBufferFromName(gltf, buffers, mesh, 'NORMAL'),
-        tangents: getBufferFromName(gltf, buffers, mesh, 'TANGENT'),
-        texCoord: getBufferFromName(gltf, buffers, mesh, 'TEXCOORD_0'),
-        joints: getBufferFromName(gltf, buffers, mesh, 'JOINTS_0'),
-        weights: getBufferFromName(gltf, buffers, mesh, 'WEIGHTS_0'),
+        positions: getBufferFromName(gl, gltf, buffers, mesh, 'POSITION'),
+        normals: getBufferFromName(gl, gltf, buffers, mesh, 'NORMAL'),
+        tangents: getBufferFromName(gl, gltf, buffers, mesh, 'TANGENT'),
+        texCoord: getBufferFromName(gl, gltf, buffers, mesh, 'TEXCOORD_0'),
+        joints: getBufferFromName(gl, gltf, buffers, mesh, 'JOINTS_0'),
+        weights: getBufferFromName(gl, gltf, buffers, mesh, 'WEIGHTS_0'),
         material: mesh.primitives[0].material,
     } as Mesh;
 };
 
-const loadMaterial = async (material: gltf.Material, model: string, images?: gltf.Image[]): Promise<Material> => {
+const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material, path: string, images?: gltf.Image[]): Promise<Material> => {
+    const dir = path.split('/').slice(0,-1).join('/');
     let baseColorTexture: WebGLTexture | null = null;
     let roughnessTexture: WebGLTexture | null = null;
     let emissiveTexture: WebGLTexture | null = null;
@@ -198,11 +200,11 @@ const loadMaterial = async (material: gltf.Material, model: string, images?: glt
     if (pbr) {
         if (pbr.baseColorTexture) {
             const uri = images![pbr.baseColorTexture.index].uri!;
-            baseColorTexture = await getTexture(`/models/${model}/${uri}`);
+            baseColorTexture = await getTexture(gl, `${dir}/${uri}`);
         }
         if (pbr.metallicRoughnessTexture) {
             const uri = images![pbr.metallicRoughnessTexture.index].uri!;
-            roughnessTexture = await getTexture(`/models/${model}/${uri}`);
+            roughnessTexture = await getTexture(gl, `${dir}/${uri}`);
         }
         baseColor = pbr.baseColorFactor
             ? vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3])
@@ -216,17 +218,17 @@ const loadMaterial = async (material: gltf.Material, model: string, images?: glt
 
     if (material.emissiveTexture) {
         const uri = images![material.emissiveTexture.index].uri!;
-        emissiveTexture = await getTexture(`/models/${model}/${uri}`);
+        emissiveTexture = await getTexture(gl, `${dir}/${uri}`);
     }
 
     if (material.normalTexture) {
         const uri = images![material.normalTexture.index].uri!;
-        normalTexture = await getTexture(`/models/${model}/${uri}`);
+        normalTexture = await getTexture(gl, `${dir}/${uri}`);
     }
 
     if (material.occlusionTexture) {
         const uri = images![material.occlusionTexture.index].uri!;
-        occlusionTexture = await getTexture(`/models/${model}/${uri}`);
+        occlusionTexture = await getTexture(gl, `${dir}/${uri}`);
     }
 
     return {
@@ -240,8 +242,8 @@ const loadMaterial = async (material: gltf.Material, model: string, images?: glt
     } as Material;
 };
 
-const loadModel = async (model: string) => {
-    const response = await fetch(`/models/${model}/${model}.gltf`);
+const loadModel = async (gl: WebGL2RenderingContext, path: string) => {
+    const response = await fetch(path);
     const gltf = await response.json() as gltf.GlTf;
 
     if (gltf.accessors === undefined || gltf.accessors.length === 0) {
@@ -249,12 +251,12 @@ const loadModel = async (model: string) => {
     }
 
     const buffers = await Promise.all(
-        gltf.buffers!.map(async (b) => await getBuffer(model, b.uri!)
+        gltf.buffers!.map(async (b) => await getBuffer(path, b.uri!)
     ));
 
     const scene = gltf.scenes![gltf.scene || 0];
-    const meshes = gltf.meshes!.map(m => loadMesh(gltf, m, buffers));
-    const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(m, model, gltf.images))) : [];
+    const meshes = gltf.meshes!.map(m => loadMesh(gl, gltf, m, buffers));
+    const materials = gltf.materials ? await Promise.all(gltf.materials.map(async (m) => await loadMaterial(gl, m, path, gltf.images))) : [];
 
     const rootNode = scene.nodes![0];
     const nodes = gltf.nodes!.map((n, i) => loadNodes(i, n));
@@ -273,8 +275,9 @@ const loadModel = async (model: string) => {
         };
     }) : [] as Skin[];
 
+    const name = path.split('/').slice(-1)[0];
     return {
-        name: model,
+        name,
         meshes,
         nodes,
         rootNode,

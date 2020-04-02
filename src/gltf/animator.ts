@@ -68,7 +68,7 @@ const applyTransforms = (appliedTransforms: mat4[], model: Model, transforms: Tr
     });
 };
 
-const update = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
+const getTransforms = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2?: number, blendTime = 0) => {
     if (!a1 || d1 === undefined) {
         return null;
     }
@@ -112,5 +112,5 @@ const update = (model: Model, a1?: Channel, a2?: Channel, d1?: number, d2?: numb
 };
 
 export {
-    update,
+    getTransforms,
 };

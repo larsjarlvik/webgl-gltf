@@ -9,7 +9,6 @@ interface Animations {
     [model: string]: ActiveAnimation[];
 }
 
-const blendTime = 300;
 const activeAnimations: Animations = {};
 
 const getAnimationFromLast = (model: string, offset = 0) => {
@@ -47,7 +46,7 @@ const getActiveAnimations = (model: Model) => {
     };
 };
 
-const update = (elapsed: number) => {
+const advanceAnimation = (elapsed: number) => {
     Object.keys(activeAnimations).forEach(m => {
         const current = getAnimationFromLast(m);
         const previous = getAnimationFromLast(m, 1);
@@ -60,6 +59,5 @@ const update = (elapsed: number) => {
 export {
     pushAnimation,
     getActiveAnimations,
-    update,
-    blendTime,
+    advanceAnimation,
 }
