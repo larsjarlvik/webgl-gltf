@@ -1,10 +1,19 @@
 {
   "name": "webgl-gltf",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "GLTF loader in WebGL",
+  "keywords": [
+    "WebGL",
+    "glTF",
+    "3D",
+    "Mesh",
+    "loader"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "start": "webpack-dev-server --mode development",
     "build": "webpack --mode production",
