@@ -292,6 +292,45 @@ const loadModel = async (gl: WebGL2RenderingContext, uri: string) => {
     } as Model;
 };
 
+
+/**
+ * Deletes GL buffers and textures
+ * @param gl Web GL context
+ * @param model Model to dispose
+ */
+const dispose = (gl: WebGL2RenderingContext, model: Model) => {
+    model.meshes.forEach(m => {
+        gl.deleteBuffer(m.indices);
+        if (m.joints) gl.deleteBuffer(m.joints.buffer);
+        if (m.normals) gl.deleteBuffer(m.normals.buffer);
+        if (m.positions) gl.deleteBuffer(m.positions.buffer);
+        if (m.tangents) gl.deleteBuffer(m.tangents.buffer);
+        if (m.texCoord) gl.deleteBuffer(m.texCoord.buffer);
+        if (m.weights) gl.deleteBuffer(m.weights.buffer);
+
+        m.joints = null;
+        m.normals = null;
+        m.tangents = null;
+        m.texCoord = null;
+        m.weights = null;
+    });
+
+    model.materials.forEach(m => {
+        if (m.baseColorTexture) gl.deleteTexture(m.baseColorTexture);
+        if (m.emissiveTexture) gl.deleteTexture(m.emissiveTexture);
+        if (m.normalTexture) gl.deleteTexture(m.normalTexture);
+        if (m.occlusionTexture) gl.deleteTexture(m.occlusionTexture);
+        if (m.roughnessTexture) gl.deleteTexture(m.roughnessTexture);
+
+        m.baseColorTexture = null;
+        m.emissiveTexture = null;
+        m.normalTexture = null;
+        m.occlusionTexture = null;
+        m.roughnessTexture = null;
+    });
+};
+
 export {
     loadModel,
+    dispose,
 };

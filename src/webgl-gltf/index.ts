@@ -1,4 +1,8 @@
-export { loadModel } from './gltf';
+export {
+    loadModel,
+    dispose,
+ } from './gltf';
+
 export { getAnimationTransforms } from './animator';
 
 export {
