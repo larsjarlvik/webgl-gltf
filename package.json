@@ -1,7 +1,7 @@
 {
   "name": "webgl-gltf",
-  "version": "0.0.5",
-  "description": "GLTF loader in WebGL",
+  "version": "0.0.6",
+  "description": "GLTF 2.0 loader for WebGL",
   "keywords": [
     "WebGL",
     "glTF",
@@ -9,6 +9,14 @@
     "Mesh",
     "loader"
   ],
+  "homepage": "https://github.com/larsjarlvik/webgl-gltf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/larsjarlvik/webgl-gltf.git"
+  },
+  "bugs": {
+    "url": "https://github.com/larsjarlvik/webgl-gltf/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
