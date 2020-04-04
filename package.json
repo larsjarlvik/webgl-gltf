@@ -1,6 +1,6 @@
 {
   "name": "webgl-gltf",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "GLTF 2.0 loader for WebGL",
   "keywords": [
     "WebGL",

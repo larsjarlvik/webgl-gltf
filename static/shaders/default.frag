@@ -9,14 +9,16 @@ precision highp float;
 
 uniform sampler2D uBaseColorTexture;
 uniform int uHasBaseColorTexture;
-uniform vec4 uBaseColor;
+uniform vec4 uBaseColorFactor;
 
-uniform sampler2D uRoughnessTexture;
-uniform int uHasRoughnessTexture;
-uniform vec2 uRoughnessMetallic;
+uniform sampler2D uMetallicRoughnessTexture;
+uniform int uHasMetallicRoughnessTexture;
+uniform float uMetallicFactor;
+uniform float uRoughnessFactor;
 
 uniform sampler2D uEmissiveTexture;
 uniform int uHasEmissiveTexture;
+uniform vec3 uEmissiveFactor;
 
 uniform sampler2D uNormalTexture;
 uniform int uHasNormalTexture;
@@ -113,21 +115,21 @@ vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
 
 vec4 getBaseColor() {
     if (uHasBaseColorTexture == 1) {
-        return srgbToLinear(texture(uBaseColorTexture, texCoord));
+        return srgbToLinear(texture(uBaseColorTexture, texCoord)) * uBaseColorFactor;
     }
-    return uBaseColor;
+    return uBaseColorFactor;
 }
 
 vec2 getRoughnessMetallic() {
-    if (uHasRoughnessTexture == 1) {
-        return texture(uRoughnessTexture, texCoord).gb;
+    if (uHasMetallicRoughnessTexture == 1) {
+        return texture(uMetallicRoughnessTexture, texCoord).gb;
     }
-    return uRoughnessMetallic;
+    return vec2(1.0, 1.0);
 }
 
 vec4 getEmissive() {
     if (uHasEmissiveTexture == 1) {
-        return texture(uEmissiveTexture, texCoord);
+        return texture(uEmissiveTexture, texCoord) * vec4(uEmissiveFactor, 1.0);
     }
     return vec4(0.0);
 }
@@ -143,8 +145,8 @@ MaterialInfo getMaterialInfo() {
     vec3 f0 = vec3(0.04);
 
     vec2 mrSample = getRoughnessMetallic();
-    float perceptualRoughness = clamp(mrSample.r, 0.0, 1.0);
-    float metallic = clamp(mrSample.g, 0.0, 1.0);
+    float perceptualRoughness = mrSample.r * uRoughnessFactor;
+    float metallic = mrSample.g * uMetallicFactor;
 
     vec4 baseColor = getBaseColor();
     vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0) * (1.0 - metallic);

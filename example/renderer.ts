@@ -41,12 +41,15 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
 
         if (material) {
             applyTexture(gl, material.baseColorTexture, 1, shader.baseColorTexture, shader.hasBaseColorTexture);
-            applyTexture(gl, material.roughnessTexture, 2, shader.roughnessTexture, shader.hasRoughnessTexture);
+            applyTexture(gl, material.metallicRoughnessTexture, 2, shader.metallicRoughnessTexture, shader.hasMetallicRoughnessTexture);
             applyTexture(gl, material.emissiveTexture, 3, shader.emissiveTexture, shader.hasEmissiveTexture);
             applyTexture(gl, material.normalTexture, 4, shader.normalTexture, shader.hasNormalTexture);
             applyTexture(gl, material.occlusionTexture, 5, shader.occlusionTexture, shader.hasOcclusionTexture);
-            if (material.baseColor) gl.uniform4f(shader.baseColor, material.baseColor[0], material.baseColor[1], material.baseColor[2], material.baseColor[3]);
-            if (material.roughnessMetallic) gl.uniform2f(shader.roughnessMetallic, material.roughnessMetallic[0], material.roughnessMetallic[1]);
+
+            gl.uniform4f(shader.baseColorFactor, material.baseColorFactor[0], material.baseColorFactor[1], material.baseColorFactor[2], material.baseColorFactor[3]);
+            gl.uniform1f(shader.metallicFactor, material.metallicFactor);
+            gl.uniform1f(shader.roughnessFactor, material.roughnessFactor);
+            gl.uniform3f(shader.emissiveFactor, material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
         }
 
         bindBuffer(gl, VaryingPosition.Positions, mesh.positions);

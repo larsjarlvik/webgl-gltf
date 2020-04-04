@@ -1,5 +1,5 @@
 import * as gltf from './types/gltf';
-import { mat4, quat, vec3, vec4, vec2 } from 'gl-matrix';
+import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from './mat';
 import { Channel, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './types/model';
 
@@ -188,13 +188,17 @@ const loadMesh = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, mesh: gltf.Mesh, 
 
 const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material, path: string, images?: gltf.Image[]): Promise<Material> => {
     const dir = path.split('/').slice(0,-1).join('/');
+
     let baseColorTexture: WebGLTexture | null = null;
-    let roughnessTexture: WebGLTexture | null = null;
+    let metallicRoughnessTexture: WebGLTexture | null = null;
     let emissiveTexture: WebGLTexture | null = null;
     let normalTexture: WebGLTexture | null = null;
     let occlusionTexture: WebGLTexture | null = null;
-    let baseColor = vec4.create();
-    let roughnessMetallic = vec2.create();
+
+    let baseColorFactor = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
+    let roughnessFactor = 0.0;
+    let metallicFactor = 1.0;
+    let emissiveFactor = vec3.fromValues(1.0, 1.0, 1.0);
 
     const pbr = material.pbrMetallicRoughness;
     if (pbr) {
@@ -202,18 +206,17 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material,
             const uri = images![pbr.baseColorTexture.index].uri!;
             baseColorTexture = await getTexture(gl, `${dir}/${uri}`);
         }
+        if (pbr.baseColorFactor) {
+            baseColorFactor = vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3]);
+        }
+
         if (pbr.metallicRoughnessTexture) {
             const uri = images![pbr.metallicRoughnessTexture.index].uri!;
-            roughnessTexture = await getTexture(gl, `${dir}/${uri}`);
+            metallicRoughnessTexture = await getTexture(gl, `${dir}/${uri}`);
         }
-        baseColor = pbr.baseColorFactor
-            ? vec4.fromValues(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2], pbr.baseColorFactor[3])
-            : vec4.create();
 
-        roughnessMetallic = vec2.fromValues(
-            pbr.roughnessFactor ? pbr.roughnessFactor[0] : 0.0,
-            pbr.metallicFactor ? pbr.metallicFactor[0] : 0.0
-        );
+        metallicFactor = pbr.metallicFactor !== undefined ? pbr.metallicFactor : 1.0;
+        roughnessFactor = pbr.roughnessFactor !== undefined ? pbr.roughnessFactor : 1.0;
     }
 
     if (material.emissiveTexture) {
@@ -231,14 +234,21 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material,
         occlusionTexture = await getTexture(gl, `${dir}/${uri}`);
     }
 
+    if (material.emissiveFactor) {
+        emissiveFactor = vec3.fromValues(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2])
+    }
+
+
     return {
         baseColorTexture,
-        roughnessTexture,
+        baseColorFactor,
+        metallicRoughnessTexture,
+        metallicFactor,
+        roughnessFactor,
         emissiveTexture,
+        emissiveFactor,
         normalTexture,
         occlusionTexture,
-        baseColor,
-        roughnessMetallic,
     } as Material;
 };
 
@@ -320,13 +330,13 @@ const dispose = (gl: WebGL2RenderingContext, model: Model) => {
         if (m.emissiveTexture) gl.deleteTexture(m.emissiveTexture);
         if (m.normalTexture) gl.deleteTexture(m.normalTexture);
         if (m.occlusionTexture) gl.deleteTexture(m.occlusionTexture);
-        if (m.roughnessTexture) gl.deleteTexture(m.roughnessTexture);
+        if (m.metallicRoughnessTexture) gl.deleteTexture(m.metallicRoughnessTexture);
 
         m.baseColorTexture = null;
         m.emissiveTexture = null;
         m.normalTexture = null;
         m.occlusionTexture = null;
-        m.roughnessTexture = null;
+        m.metallicRoughnessTexture = null;
     });
 };
 

@@ -5,16 +5,18 @@ export interface DefaultShader {
     cameraPosition: WebGLUniformLocation;
     hasBaseColorTexture: WebGLUniformLocation;
     baseColorTexture: WebGLUniformLocation;
-    hasRoughnessTexture: WebGLUniformLocation;
-    roughnessTexture: WebGLUniformLocation;
+    hasMetallicRoughnessTexture: WebGLUniformLocation;
+    metallicRoughnessTexture: WebGLUniformLocation;
     hasEmissiveTexture: WebGLUniformLocation;
     normalTexture: WebGLUniformLocation;
     hasNormalTexture: WebGLUniformLocation;
     emissiveTexture: WebGLUniformLocation;
     hasOcclusionTexture: WebGLUniformLocation;
     occlusionTexture: WebGLUniformLocation;
-    baseColor: WebGLUniformLocation;
-    roughnessMetallic: WebGLUniformLocation;
+    baseColorFactor: WebGLUniformLocation;
+    metallicFactor: WebGLUniformLocation;
+    roughnessFactor: WebGLUniformLocation;
+    emissiveFactor: WebGLUniformLocation;
     isAnimated: WebGLUniformLocation;
     jointTransform: WebGLUniformLocation[];
     brdfLut: WebGLUniformLocation;
@@ -31,14 +33,16 @@ const getUniformLocations = (gl: WebGL2RenderingContext, program: WebGLProgram):
     const isAnimated = gl.getUniformLocation(program, 'uIsAnimated')!;
     const hasBaseColorTexture = gl.getUniformLocation(program, 'uHasBaseColorTexture')!;
     const baseColorTexture = gl.getUniformLocation(program, 'uBaseColorTexture')!;
-    const hasRoughnessTexture = gl.getUniformLocation(program, 'uHasRoughnessTexture')!;
-    const roughnessTexture = gl.getUniformLocation(program, 'uRoughnessTexture')!;
+    const hasMetallicRoughnessTexture = gl.getUniformLocation(program, 'uHasMetallicRoughnessTexture')!;
+    const metallicRoughnessTexture = gl.getUniformLocation(program, 'uMetallicRoughnessTexture')!;
 
     const hasEmissiveTexture = gl.getUniformLocation(program, 'uHasEmissiveTexture')!;
     const emissiveTexture = gl.getUniformLocation(program, 'uEmissiveTexture')!;
 
-    const baseColor = gl.getUniformLocation(program, 'uBaseColor')!;
-    const roughnessMetallic = gl.getUniformLocation(program, 'uRoughnessMetallic')!;
+    const baseColorFactor = gl.getUniformLocation(program, 'uBaseColorFactor')!;
+    const metallicFactor = gl.getUniformLocation(program, 'uMetallicFactor')!;
+    const roughnessFactor = gl.getUniformLocation(program, 'uRoughnessFactor')!;
+    const emissiveFactor = gl.getUniformLocation(program, 'uEmissiveFactor')!;
 
     const normalTexture = gl.getUniformLocation(program, 'uNormalTexture')!;
     const hasNormalTexture = gl.getUniformLocation(program, 'uHasNormalTexture')!;
@@ -62,16 +66,18 @@ const getUniformLocations = (gl: WebGL2RenderingContext, program: WebGLProgram):
         cameraPosition,
         hasBaseColorTexture,
         baseColorTexture,
-        hasRoughnessTexture,
-        roughnessTexture,
+        hasMetallicRoughnessTexture,
+        metallicRoughnessTexture,
         hasEmissiveTexture,
         normalTexture,
         hasNormalTexture,
         occlusionTexture,
         hasOcclusionTexture,
         emissiveTexture,
-        baseColor,
-        roughnessMetallic,
+        baseColorFactor,
+        metallicFactor,
+        roughnessFactor,
+        emissiveFactor,
         isAnimated,
         jointTransform,
         brdfLut,
