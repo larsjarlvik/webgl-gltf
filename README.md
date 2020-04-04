@@ -1,7 +1,7 @@
 # webgl-gltf
 A small GLTF loader For WebGL (**alpha!**). Only depends on *gl-matrix*.
 
-Requires WebGL 2 to run.
+Supports both WebGL and WebGL 2.
 
 Please see example folder for implementation.
 
