@@ -22,9 +22,16 @@ export interface DefaultShader {
     brdfLut: WebGLUniformLocation;
     environmentDiffuse: WebGLUniformLocation;
     environmentSpecular: WebGLUniformLocation;
+
+    position: number;
+    normal: number;
+    tangent: number;
+    texCoord: number;
+    joints: number;
+    weights: number;
 }
 
-const getUniformLocations = (gl: WebGL2RenderingContext, program: WebGLProgram): DefaultShader => {
+const getUniformLocations = (gl: WebGLRenderingContext, program: WebGLProgram): DefaultShader => {
     const pMatrix = gl.getUniformLocation(program, 'uProjectionMatrix')!;
     const vMatrix = gl.getUniformLocation(program, 'uViewMatrix')!;
     const mMatrix = gl.getUniformLocation(program, 'uModelMatrix')!;
@@ -55,9 +62,16 @@ const getUniformLocations = (gl: WebGL2RenderingContext, program: WebGLProgram):
     const environmentSpecular = gl.getUniformLocation(program, 'uEnvironmentSpecular')!;
 
     const jointTransform: WebGLUniformLocation[] = [];
-    for (let i = 0; i < 50; i ++) {
+    for (let i = 0; i < 25; i ++) {
         jointTransform[i] = gl.getUniformLocation(program, `uJointTransform[${i}]`)!
     }
+
+    const position = gl.getAttribLocation(program, 'vPosition');
+    const normal = gl.getAttribLocation(program, 'vNormal');
+    const tangent = gl.getAttribLocation(program, 'vTangent');
+    const texCoord = gl.getAttribLocation(program, 'vTexCoord');
+    const joints = gl.getAttribLocation(program, 'vJoints');
+    const weights = gl.getAttribLocation(program, 'vWeights');
 
     return {
         pMatrix,
@@ -83,6 +97,13 @@ const getUniformLocations = (gl: WebGL2RenderingContext, program: WebGLProgram):
         brdfLut,
         environmentDiffuse,
         environmentSpecular,
+
+        position,
+        normal,
+        tangent,
+        texCoord,
+        joints,
+        weights,
     };
 };
 

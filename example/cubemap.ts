@@ -16,7 +16,7 @@ const getImage = async (uri: string) => {
     });
 };
 
-const createCubeMap = (gl: WebGL2RenderingContext, textures: HTMLImageElement[]) => {
+const createCubeMap = (gl: WebGLRenderingContext, textures: HTMLImageElement[]) => {
     const cubeMap = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
     textures.forEach((t, i) => {
@@ -28,7 +28,7 @@ const createCubeMap = (gl: WebGL2RenderingContext, textures: HTMLImageElement[])
     return cubeMap;
 };
 
-const load = async (gl: WebGL2RenderingContext): Promise<Environment> => {
+const load = async (gl: WebGLRenderingContext): Promise<Environment> => {
     const names = ['right', 'left', 'top', 'bottom', 'front', 'back'];
     const diffuseTextures = await Promise.all(names.map(n => getImage(`environment/diffuse_${n}.jpg`)));
     const specularTextures = await Promise.all(names.map(n => getImage(`environment/specular_${n}.jpg`)));
@@ -55,18 +55,18 @@ const load = async (gl: WebGL2RenderingContext): Promise<Environment> => {
     };
 };
 
-const bind = (gl: WebGL2RenderingContext, environment: Environment, brfdLutTarget: WebGLUniformLocation, diffuseTarget: WebGLUniformLocation, specularTarget: WebGLUniformLocation) => {
-    gl.activeTexture(gl.TEXTURE10);
+const bind = (gl: WebGLRenderingContext, environment: Environment, brfdLutTarget: WebGLUniformLocation, diffuseTarget: WebGLUniformLocation, specularTarget: WebGLUniformLocation) => {
+    gl.activeTexture(gl.TEXTURE5);
     gl.bindTexture(gl.TEXTURE_2D, environment.brdfLut);
-    gl.uniform1i(brfdLutTarget, 10);
+    gl.uniform1i(brfdLutTarget, 5);
 
-    gl.activeTexture(gl.TEXTURE11);
+    gl.activeTexture(gl.TEXTURE6);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, environment.diffuse);
-    gl.uniform1i(diffuseTarget, 11);
+    gl.uniform1i(diffuseTarget, 6);
 
-    gl.activeTexture(gl.TEXTURE12);
+    gl.activeTexture(gl.TEXTURE7);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, environment.specular);
-    gl.uniform1i(specularTarget, 12);
+    gl.uniform1i(specularTarget, 7);
 };
 
 export {

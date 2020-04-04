@@ -1,4 +1,4 @@
-#version 300 es
+#version 100
 
 precision highp float;
 
@@ -32,12 +32,10 @@ uniform samplerCube uEnvironmentSpecular;
 
 uniform vec3 uCameraPosition;
 
-in vec2 texCoord;
-in vec3 normal;
-in vec3 position;
-in mat3 tangent;
-
-out vec4 fragColor;
+varying vec2 texCoord;
+varying vec3 normal;
+varying vec3 position;
+varying mat3 tangent;
 
 struct MaterialInfo {
     vec3 reflectance0;
@@ -100,12 +98,12 @@ vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
 
     vec2 brdfSamplePoint = clamp(vec2(NdotV, materialInfo.perceptualRoughness), vec2(0.0, 0.0), vec2(1.0, 1.0));
 
-    vec2 brdf = texture(uBrdfLut, brdfSamplePoint).rg;
+    vec2 brdf = texture2D(uBrdfLut, brdfSamplePoint).rg;
     vec4 diffuseSample = vec4(0.1, 0.1, 0.1, 1.0);
     vec4 specularSample = vec4(0.3);
 
-    vec3 diffuseLight = srgbToLinear(texture(uEnvironmentDiffuse, n)).rgb * 0.1;
-    vec3 specularLight = srgbToLinear(texture(uEnvironmentSpecular, n)).rgb * 0.2;
+    vec3 diffuseLight = srgbToLinear(textureCube(uEnvironmentDiffuse, n)).rgb * 0.1;
+    vec3 specularLight = srgbToLinear(textureCube(uEnvironmentSpecular, n)).rgb * 0.2;
 
     vec3 diffuse = diffuseLight * materialInfo.diffuseColor;
     vec3 specular = specularLight * (materialInfo.specularColor * brdf.x + brdf.y);
@@ -115,28 +113,28 @@ vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
 
 vec4 getBaseColor() {
     if (uHasBaseColorTexture == 1) {
-        return srgbToLinear(texture(uBaseColorTexture, texCoord)) * uBaseColorFactor;
+        return srgbToLinear(texture2D(uBaseColorTexture, texCoord)) * uBaseColorFactor;
     }
     return uBaseColorFactor;
 }
 
 vec2 getRoughnessMetallic() {
     if (uHasMetallicRoughnessTexture == 1) {
-        return texture(uMetallicRoughnessTexture, texCoord).gb;
+        return texture2D(uMetallicRoughnessTexture, texCoord).gb;
     }
     return vec2(1.0, 1.0);
 }
 
 vec4 getEmissive() {
     if (uHasEmissiveTexture == 1) {
-        return texture(uEmissiveTexture, texCoord) * vec4(uEmissiveFactor, 1.0);
+        return texture2D(uEmissiveTexture, texCoord) * vec4(uEmissiveFactor, 1.0);
     }
     return vec4(0.0);
 }
 
 float getOcclusion() {
     if (uHasOcclusionTexture == 1) {
-        return texture(uOcclusionTexture, texCoord).r;
+        return texture2D(uOcclusionTexture, texCoord).r;
     }
     return 1.0;
 }
@@ -172,7 +170,7 @@ void main() {
 
     vec3 n = normal;
     if (uHasNormalTexture == 1) {
-        n = texture(uNormalTexture, texCoord).rgb;
+        n = texture2D(uNormalTexture, texCoord).rgb;
         n = normalize(tangent * (2.0 * n - 1.0));
     }
 
@@ -184,5 +182,5 @@ void main() {
     color = clamp(color, 0.0, 1.0);
     color = mix(color, color * getOcclusion(), 1.0);
 
-    fragColor = vec4(linearToSrgb(color), 1.0);
+    gl_FragColor = vec4(linearToSrgb(color), 1.0);
 }

@@ -9,7 +9,7 @@ import { DefaultShader } from './shaders/default-shader';
 import * as gltf from 'webgl-gltf';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
+const gl = canvas.getContext('webgl') as WebGLRenderingContext;
 
 const blendTime = 300;
 let lastFrame = 0;
@@ -27,7 +27,7 @@ const setSize = () => {
 }
 
 if (!gl) {
-    alert('WebGL 2 not available')
+    alert('WebGL not available')
 }
 
 const listAnimations = (models: gltf.Model[]) => {
@@ -46,13 +46,13 @@ const listAnimations = (models: gltf.Model[]) => {
     });
 };
 
-const render = (shader: DefaultShader, models: gltf.Model[]) => {
+const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const cameraMatrix = camera.update(cam, canvas.width, canvas.height);
-    gl.uniform3f(shader.cameraPosition, cameraMatrix.position[0], cameraMatrix.position[1], cameraMatrix.position[2]);
-    gl.uniformMatrix4fv(shader.pMatrix, false, cameraMatrix.pMatrix);
-    gl.uniformMatrix4fv(shader.vMatrix, false, cameraMatrix.vMatrix);
+    gl.uniform3f(uniforms.cameraPosition, cameraMatrix.position[0], cameraMatrix.position[1], cameraMatrix.position[2]);
+    gl.uniformMatrix4fv(uniforms.pMatrix, false, cameraMatrix.pMatrix);
+    gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
         const animation = gltf.getActiveAnimations(model);
@@ -63,19 +63,23 @@ const render = (shader: DefaultShader, models: gltf.Model[]) => {
         );
 
         if (animationTransforms !== null) {
-            animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(shader.jointTransform[i], false, x); });
-            gl.uniform1i(shader.isAnimated, 1);
+            animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
+            gl.uniform1i(uniforms.isAnimated, 1);
         } else {
-            gl.uniform1i(shader.isAnimated, 0);
+            gl.uniform1i(uniforms.isAnimated, 0);
         }
 
-        renderModel(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, shader);
+        renderModel(gl, model, model.rootNode, model.nodes[model.rootNode].localBindTransform, uniforms);
     });
 
     gltf.advanceAnimation(performance.now() - lastFrame);
+    const error = gl.getError();
+    if (error != 0) {
+        alert(error);
+    }
 
     requestAnimationFrame(() => {
-        render(shader, models);
+        render(uniforms, models);
         lastFrame = performance.now();
     });
 };

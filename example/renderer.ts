@@ -2,16 +2,7 @@ import { mat4 } from 'gl-matrix';
 import { Model, GLBuffer } from 'webgl-gltf';
 import { DefaultShader } from './shaders/default-shader';
 
-enum VaryingPosition {
-    Positions = 0,
-    Normal = 1,
-    Tangent = 2,
-    TexCoord = 3,
-    Joints = 4,
-    Weights = 5,
-};
-
-const bindBuffer = (gl: WebGL2RenderingContext, position: VaryingPosition, buffer: GLBuffer | null) => {
+const bindBuffer = (gl: WebGLRenderingContext, position: number, buffer: GLBuffer | null) => {
     if (buffer === null) return;
 
     gl.enableVertexAttribArray(position);
@@ -21,7 +12,7 @@ const bindBuffer = (gl: WebGL2RenderingContext, position: VaryingPosition, buffe
     return buffer;
 };
 
-const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture | null, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
+const applyTexture = (gl: WebGLRenderingContext, texture: WebGLTexture | null, textureTarget: number, textureUniform: WebGLUniformLocation, enabledUniform?: WebGLUniformLocation) => {
     if (texture) {
         gl.activeTexture(gl.TEXTURE0 + textureTarget);
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -31,7 +22,7 @@ const applyTexture = (gl: WebGL2RenderingContext, texture: WebGLTexture | null, 
     if (enabledUniform !== undefined) gl.uniform1i(enabledUniform, texture ? 1 : 0);
 }
 
-const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, transform: mat4, shader: DefaultShader) => {
+const renderModel = (gl: WebGLRenderingContext, model: Model, node: number, transform: mat4, uniforms: DefaultShader) => {
     const t = mat4.create();
     mat4.multiply(t, transform, model.nodes[node].localBindTransform);
 
@@ -40,33 +31,33 @@ const renderModel = (gl: WebGL2RenderingContext, model: Model, node: number, tra
         const material = model.materials[mesh.material];
 
         if (material) {
-            applyTexture(gl, material.baseColorTexture, 1, shader.baseColorTexture, shader.hasBaseColorTexture);
-            applyTexture(gl, material.metallicRoughnessTexture, 2, shader.metallicRoughnessTexture, shader.hasMetallicRoughnessTexture);
-            applyTexture(gl, material.emissiveTexture, 3, shader.emissiveTexture, shader.hasEmissiveTexture);
-            applyTexture(gl, material.normalTexture, 4, shader.normalTexture, shader.hasNormalTexture);
-            applyTexture(gl, material.occlusionTexture, 5, shader.occlusionTexture, shader.hasOcclusionTexture);
+            applyTexture(gl, material.baseColorTexture, 0, uniforms.baseColorTexture, uniforms.hasBaseColorTexture);
+            applyTexture(gl, material.metallicRoughnessTexture, 1, uniforms.metallicRoughnessTexture, uniforms.hasMetallicRoughnessTexture);
+            applyTexture(gl, material.emissiveTexture, 2, uniforms.emissiveTexture, uniforms.hasEmissiveTexture);
+            applyTexture(gl, material.normalTexture, 3, uniforms.normalTexture, uniforms.hasNormalTexture);
+            applyTexture(gl, material.occlusionTexture, 4, uniforms.occlusionTexture, uniforms.hasOcclusionTexture);
 
-            gl.uniform4f(shader.baseColorFactor, material.baseColorFactor[0], material.baseColorFactor[1], material.baseColorFactor[2], material.baseColorFactor[3]);
-            gl.uniform1f(shader.metallicFactor, material.metallicFactor);
-            gl.uniform1f(shader.roughnessFactor, material.roughnessFactor);
-            gl.uniform3f(shader.emissiveFactor, material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
+            gl.uniform4f(uniforms.baseColorFactor, material.baseColorFactor[0], material.baseColorFactor[1], material.baseColorFactor[2], material.baseColorFactor[3]);
+            gl.uniform1f(uniforms.metallicFactor, material.metallicFactor);
+            gl.uniform1f(uniforms.roughnessFactor, material.roughnessFactor);
+            gl.uniform3f(uniforms.emissiveFactor, material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
         }
 
-        bindBuffer(gl, VaryingPosition.Positions, mesh.positions);
-        bindBuffer(gl, VaryingPosition.Normal, mesh.normals);
-        bindBuffer(gl, VaryingPosition.Tangent, mesh.tangents);
-        bindBuffer(gl, VaryingPosition.TexCoord, mesh.texCoord);
-        bindBuffer(gl, VaryingPosition.Joints, mesh.joints);
-        bindBuffer(gl, VaryingPosition.Weights, mesh.weights);
+        bindBuffer(gl, uniforms.position, mesh.positions);
+        bindBuffer(gl, uniforms.normal, mesh.normals);
+        bindBuffer(gl, uniforms.tangent, mesh.tangents);
+        bindBuffer(gl, uniforms.texCoord, mesh.texCoord);
+        bindBuffer(gl, uniforms.joints, mesh.joints);
+        bindBuffer(gl, uniforms.weights, mesh.weights);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indices);
-        gl.uniformMatrix4fv(shader.mMatrix, false, transform);
+        gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
 
-        gl.drawElements(gl.TRIANGLES, model.meshes[0].elements, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, mesh.elements, gl.UNSIGNED_SHORT, 0);
     }
 
     model.nodes[node].children.forEach(c => {
-        renderModel(gl, model, c, transform, shader);
+        renderModel(gl, model, c, transform, uniforms);
     });
 };
 

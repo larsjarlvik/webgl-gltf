@@ -3,6 +3,8 @@ import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 import { createMat4FromArray, applyRotationFromQuat } from './mat';
 import { Channel, Node, Mesh, Model, KeyFrame, Skin, Material, GLBuffer, Animation } from './types/model';
 
+type GLContext = WebGLRenderingContext | WebGL2RenderingContext;
+
 const accessorSizes = {
     'SCALAR': 1,
     'VEC2': 2,
@@ -27,15 +29,12 @@ export enum BufferType {
 }
 
 const getBuffer = async (path: string, buffer: string) => {
-    const dir = path.split('/').slice(0,-1).join('/');
+    const dir = path.split('/').slice(0, -1).join('/');
     const response = await fetch(`${dir}/${buffer}`);
-    const blob = await response.blob();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return await (blob as any).arrayBuffer();
+    return await response.arrayBuffer();
 };
 
-const getTexture = async (gl: WebGL2RenderingContext, uri: string) => {
+const getTexture = async (gl: GLContext, uri: string) => {
     return new Promise<WebGLTexture>(resolve => {
         const img = new Image();
         img.onload = () => {
@@ -76,7 +75,7 @@ const readBufferFromFile = (gltf: gltf.GlTf, buffers: ArrayBuffer[], accessor: g
     } as Buffer;
 };
 
-const getBufferFromName = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
+const getBufferFromName = (gl: GLContext, gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
     if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
@@ -92,7 +91,7 @@ const getBufferFromName = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, buffers:
     return {
         buffer,
         size: bufferData.size,
-        type: bufferData.componentType == BufferType.Float ? gl.FLOAT : gl.UNSIGNED_SHORT,
+        type: bufferData.componentType,
     } as GLBuffer;
 };
 
@@ -165,7 +164,7 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
     return c;
 };
 
-const loadMesh = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
+const loadMesh = (gl: GLContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
     const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
     const indexArray = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
 
@@ -186,8 +185,8 @@ const loadMesh = (gl: WebGL2RenderingContext, gltf: gltf.GlTf, mesh: gltf.Mesh, 
     } as Mesh;
 };
 
-const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material, path: string, images?: gltf.Image[]): Promise<Material> => {
-    const dir = path.split('/').slice(0,-1).join('/');
+const loadMaterial = async (gl: GLContext, material: gltf.Material, path: string, images?: gltf.Image[]): Promise<Material> => {
+    const dir = path.split('/').slice(0, -1).join('/');
 
     let baseColorTexture: WebGLTexture | null = null;
     let metallicRoughnessTexture: WebGLTexture | null = null;
@@ -257,7 +256,7 @@ const loadMaterial = async (gl: WebGL2RenderingContext, material: gltf.Material,
  * @param gl Web GL context
  * @param uri URI to model
  */
-const loadModel = async (gl: WebGL2RenderingContext, uri: string) => {
+const loadModel = async (gl: GLContext, uri: string) => {
     const response = await fetch(uri);
     const gltf = await response.json() as gltf.GlTf;
 
@@ -308,7 +307,7 @@ const loadModel = async (gl: WebGL2RenderingContext, uri: string) => {
  * @param gl Web GL context
  * @param model Model to dispose
  */
-const dispose = (gl: WebGL2RenderingContext, model: Model) => {
+const dispose = (gl: GLContext, model: Model) => {
     model.meshes.forEach(m => {
         gl.deleteBuffer(m.indices);
         if (m.joints) gl.deleteBuffer(m.joints.buffer);
