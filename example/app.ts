@@ -21,8 +21,10 @@ const cam = {
 } as camera.Camera;
 
 const setSize = () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
@@ -73,10 +75,6 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
     });
 
     gltf.advanceAnimation(performance.now() - lastFrame);
-    const error = gl.getError();
-    if (error != 0) {
-        alert(error);
-    }
 
     requestAnimationFrame(() => {
         render(uniforms, models);
