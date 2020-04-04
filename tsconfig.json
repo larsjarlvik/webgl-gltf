@@ -16,6 +16,5 @@
         "forceConsistentCasingInFileNames": true,
         "esModuleInterop": true,
         "sourceMap": true,
-        "declaration": true,
     }
 }

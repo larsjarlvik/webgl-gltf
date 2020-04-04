@@ -1,10 +1,9 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-
-console.log(__dirname);
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
-    entry: './example/app.ts',
+    entry: './example/src/app.ts',
     resolve: {
         extensions: ['.ts', '.tsx', '.js'],
         modules: [
@@ -15,12 +14,12 @@ module.exports = {
     devtool: 'source-map',
     module: {
         rules: [{
-            test: /\.ts(x?)$/,
+            test: /\.ts$/,
             include: [path.resolve('./example'), path.resolve('./src')],
             use: [{ loader: 'ts-loader' }]
         },
         {
-            test: /\.(ts|tsx)$/,
+            test: /\.ts$/,
             enforce: 'pre',
             use: [{
                 options: { eslintPath: require.resolve('eslint') },
@@ -35,10 +34,12 @@ module.exports = {
         filename: 'bundle.[hash].js',
     },
     plugins: [
-        new HtmlWebpackPlugin({ template: './index.html' }),
+        new CleanWebpackPlugin(),
+        new HtmlWebpackPlugin({ template: './example/index.html' }),
     ],
     devServer: {
-        contentBase: './static',
+        publicPath: '/',
+        contentBase: './example/static',
         stats: {
             children: false,
             modules: false,
