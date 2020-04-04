@@ -1,4 +1,4 @@
-import { mat4, vec3, quat, vec4, vec2 } from 'gl-matrix';
+import { mat4, vec3, quat, vec4 } from 'gl-matrix';
 
 /**
  * Model root
