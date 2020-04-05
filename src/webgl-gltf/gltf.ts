@@ -165,16 +165,16 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
 };
 
 const loadMesh = (gl: GLContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
-    const indexBuffer = gltf.bufferViews![gltf.accessors![mesh.primitives[0].indices!].bufferView!];
-    const indexArray = new Int16Array(buffers[indexBuffer.buffer], indexBuffer.byteOffset || 0, indexBuffer.byteLength / Int16Array.BYTES_PER_ELEMENT);
+    const indexAccessor = gltf.accessors![mesh.primitives[0].indices!];
+    const indexBuffer = readBufferFromFile(gltf, buffers, indexAccessor);
 
     const indices = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer.data, gl.STATIC_DRAW);
 
     return {
         indices,
-        elements: indexArray.length,
+        elements: indexBuffer.data.length,
         positions: getBufferFromName(gl, gltf, buffers, mesh, 'POSITION'),
         normals: getBufferFromName(gl, gltf, buffers, mesh, 'NORMAL'),
         tangents: getBufferFromName(gl, gltf, buffers, mesh, 'TANGENT'),
