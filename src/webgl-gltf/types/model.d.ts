@@ -75,11 +75,11 @@ export interface GLBuffer {
 }
 
 /**
- * Textures and material info for PBR.
+ * Mesh buffers and associated material
  */
 export interface Mesh {
-    elements: number;
-    indices: WebGLBuffer;
+    elementCount: number;
+    indices: WebGLBuffer | null;
     positions: GLBuffer;
     normals: GLBuffer | null;
     tangents: GLBuffer | null;
@@ -90,7 +90,7 @@ export interface Mesh {
 }
 
 /**
- * Mesh materials
+ * Textures and material info for PBR.
  */
 export interface Material {
     baseColorTexture: WebGLTexture | null;

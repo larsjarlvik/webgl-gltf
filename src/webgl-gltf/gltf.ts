@@ -75,13 +75,17 @@ const readBufferFromFile = (gltf: gltf.GlTf, buffers: ArrayBuffer[], accessor: g
     } as Buffer;
 };
 
+const getAccessor = (gltf: gltf.GlTf, mesh: gltf.Mesh, attributeName: string) => {
+    const attribute = mesh.primitives[0].attributes[attributeName];
+    return gltf.accessors![attribute];
+};
+
 const getBufferFromName = (gl: GLContext, gltf: gltf.GlTf, buffers: ArrayBuffer[], mesh: gltf.Mesh, name: string) => {
     if (mesh.primitives[0].attributes[name] === undefined) {
         return null;
     }
 
-    const attribute = mesh.primitives[0].attributes[name];
-    const accessor = gltf.accessors![attribute];
+    const accessor = getAccessor(gltf, mesh, name);
     const bufferData = readBufferFromFile(gltf, buffers, accessor);
 
     const buffer = gl.createBuffer();
@@ -165,16 +169,26 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
 };
 
 const loadMesh = (gl: GLContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: ArrayBuffer[]) => {
-    const indexAccessor = gltf.accessors![mesh.primitives[0].indices!];
-    const indexBuffer = readBufferFromFile(gltf, buffers, indexAccessor);
+    let indices: WebGLBuffer | null = null;
+    let elementCount = 0;
 
-    const indices = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer.data, gl.STATIC_DRAW);
+    if (mesh.primitives[0].indices) {
+        const indexAccessor = gltf.accessors![mesh.primitives[0].indices!];
+        const indexBuffer = readBufferFromFile(gltf, buffers, indexAccessor);
+
+        indices = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer.data, gl.STATIC_DRAW);
+
+        elementCount = indexBuffer.data.length;
+    } else {
+        const accessor = getAccessor(gltf, mesh, 'POSITION');
+        elementCount = accessor.count;
+    }
 
     return {
         indices,
-        elements: indexBuffer.data.length,
+        elementCount,
         positions: getBufferFromName(gl, gltf, buffers, mesh, 'POSITION'),
         normals: getBufferFromName(gl, gltf, buffers, mesh, 'NORMAL'),
         tangents: getBufferFromName(gl, gltf, buffers, mesh, 'TANGENT'),
@@ -317,6 +331,7 @@ const dispose = (gl: GLContext, model: Model) => {
         if (m.texCoord) gl.deleteBuffer(m.texCoord.buffer);
         if (m.weights) gl.deleteBuffer(m.weights.buffer);
 
+        m.indices = null
         m.joints = null;
         m.normals = null;
         m.tangents = null;

@@ -50,10 +50,14 @@ const renderModel = (gl: WebGLRenderingContext, model: Model, node: number, tran
         bindBuffer(gl, uniforms.joints, mesh.joints);
         bindBuffer(gl, uniforms.weights, mesh.weights);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indices);
         gl.uniformMatrix4fv(uniforms.mMatrix, false, transform);
 
-        gl.drawElements(gl.TRIANGLES, mesh.elements, gl.UNSIGNED_SHORT, 0);
+        if (mesh.indices) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indices);
+            gl.drawElements(gl.TRIANGLES, mesh.elementCount, gl.UNSIGNED_SHORT, 0);
+        } else {
+            gl.drawArrays(gl.TRIANGLES, 0, mesh.elementCount);
+        }
     }
 
     model.nodes[node].children.forEach(c => {
