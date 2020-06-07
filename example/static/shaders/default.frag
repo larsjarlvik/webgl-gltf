@@ -92,10 +92,6 @@ vec3 calculateDirectionalLight(MaterialInfo materialInfo, vec3 normal, vec3 view
 
 vec3 getIBLContribution(MaterialInfo materialInfo, vec3 n, vec3 v) {
     float NdotV = clamp(dot(n, v), 0.0, 1.0);
-
-    float lod = clamp(materialInfo.perceptualRoughness * 4.0, 0.0, 4.0);
-    vec3 reflection = normalize(reflect(-v, n));
-
     vec2 brdfSamplePoint = clamp(vec2(NdotV, materialInfo.perceptualRoughness), vec2(0.0, 0.0), vec2(1.0, 1.0));
 
     vec2 brdf = texture2D(uBrdfLut, brdfSamplePoint).rg;
