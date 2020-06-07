@@ -9,6 +9,7 @@ export {
     pushAnimation,
     getActiveAnimations,
     advanceAnimation,
+    ActiveAnimation,
  } from './animation';
 
  export {

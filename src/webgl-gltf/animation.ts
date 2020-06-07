@@ -1,8 +1,6 @@
-import { Model } from './types/model';
-
 interface ActiveAnimation {
     key: string;
-    duration: number;
+    elapsed: number;
 }
 
 interface Animations {
@@ -30,7 +28,7 @@ const pushAnimation = (model: string, animation: string) => {
 
     activeAnimations[model].push({
         key: animation,
-        duration: 0,
+        elapsed: 0,
     });
 
     activeAnimations[model].slice(activeAnimations[model].length - 2);
@@ -40,19 +38,8 @@ const pushAnimation = (model: string, animation: string) => {
  * Gets the current and previous animation
  * @param model GLTF Model
  */
-const getActiveAnimations = (model: Model) => {
-    const currentAA = getAnimationFromLast(model.name);
-    const previousAA = getAnimationFromLast(model.name, 1);
-
-    const current = currentAA ? model.animations[currentAA.key] : undefined;
-    const previous = previousAA ? model.animations[previousAA.key] : undefined;
-
-    return {
-        current,
-        currentDuration: currentAA?.duration,
-        previous,
-        previousDuration: previousAA?.duration,
-    };
+const getActiveAnimations = (model: string) => {
+    return activeAnimations[model].slice(activeAnimations[model].length - 2);
 };
 
 /**
@@ -64,8 +51,8 @@ const advanceAnimation = (elapsed: number) => {
         const current = getAnimationFromLast(m);
         const previous = getAnimationFromLast(m, 1);
 
-        if (current) current.duration += elapsed;
-        if (previous) previous.duration += elapsed;
+        if (current) current.elapsed += elapsed;
+        if (previous) previous.elapsed += elapsed;
     });
 };
 
@@ -73,4 +60,5 @@ export {
     pushAnimation,
     getActiveAnimations,
     advanceAnimation,
+    ActiveAnimation,
 }

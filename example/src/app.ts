@@ -57,12 +57,8 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
     gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        const animation = gltf.getActiveAnimations(model);
-        const animationTransforms = gltf.getAnimationTransforms(model,
-            animation.current, animation.currentDuration,
-            animation.previous, animation.previousDuration,
-            blendTime
-        );
+        const animation = gltf.getActiveAnimations(model.name);
+        const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
 
         if (animationTransforms !== null) {
             animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
