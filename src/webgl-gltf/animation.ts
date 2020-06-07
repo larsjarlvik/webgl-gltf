@@ -39,6 +39,7 @@ const pushAnimation = (model: string, animation: string) => {
  * @param model GLTF Model
  */
 const getActiveAnimations = (model: string) => {
+    if (!activeAnimations[model]) return null;
     return activeAnimations[model].slice(activeAnimations[model].length - 2);
 };
 

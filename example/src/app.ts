@@ -58,9 +58,9 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
 
     models.forEach(model => {
         const animation = gltf.getActiveAnimations(model.name);
-        const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
 
-        if (animationTransforms !== null) {
+        if (animation !== null) {
+            const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
             animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
             gl.uniform1i(uniforms.isAnimated, 1);
         } else {
