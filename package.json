@@ -25,7 +25,7 @@
   "scripts": {
     "start": "webpack-dev-server --mode development",
     "build": "webpack --mode production",
-    "prepublish": "node node_modules/typescript/bin/tsc --project ./src"
+    "prepublish": "rimraf dist/ && node node_modules/typescript/bin/tsc --project ./src && cp -r src/webgl-gltf/types dist/"
   },
   "author": "Lars Jarlvik",
   "license": "ISC",
@@ -37,6 +37,7 @@
     "eslint": "^6.8.0",
     "eslint-loader": "^3.0.3",
     "html-webpack-plugin": "^3.2.0",
+    "rimraf": "^3.0.2",
     "ts-loader": "^6.2.1",
     "typescript": "^3.7.5",
     "webpack": "^4.41.5",
