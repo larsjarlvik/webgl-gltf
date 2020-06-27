@@ -36,13 +36,13 @@ const listAnimations = (models: gltf.Model[]) => {
     models.forEach(model => {
         if (Object.keys(model.animations).length === 0) return;
 
-        gltf.pushAnimation(model.name, Object.keys(model.animations)[0]);
+        gltf.pushAnimation('default', model.name, Object.keys(model.animations)[0]);
 
         const ui = document.getElementById('ui') as HTMLElement;
         Object.keys(model.animations).forEach(a => {
             const btn = document.createElement('button');
             btn.innerText = a;
-            btn.addEventListener('click', () => gltf.pushAnimation(model.name, a));
+            btn.addEventListener('click', () => gltf.pushAnimation('default', model.name, a));
             ui.appendChild(btn);
         });
     });
@@ -57,11 +57,11 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
     gl.uniformMatrix4fv(uniforms.vMatrix, false, cameraMatrix.vMatrix);
 
     models.forEach(model => {
-        const animation = gltf.getActiveAnimations(model.name);
+        const animation = gltf.getActiveAnimations('default', model.name);
 
         if (animation !== null) {
             const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
-            animationTransforms?.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
+            animationTransforms.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
             gl.uniform1i(uniforms.isAnimated, 1);
         } else {
             gl.uniform1i(uniforms.isAnimated, 0);

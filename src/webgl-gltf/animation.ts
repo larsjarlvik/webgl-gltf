@@ -9,46 +9,53 @@ interface Animations {
 
 const activeAnimations: Animations = {};
 
-const getAnimationFromLast = (model: string, offset = 0) => {
-    if (activeAnimations[model] === undefined || activeAnimations[model].length - offset - 1 < 0) {
+const getAnimationFromLast = (key: string, offset = 0) => {
+    if (activeAnimations[key] === undefined || activeAnimations[key].length - offset - 1 < 0) {
         return null;
     }
 
-    return activeAnimations[model][activeAnimations[model].length - offset - 1];
+    return activeAnimations[key][activeAnimations[key].length - offset - 1];
 }
 
 /**
  * Sets the active animation
+ * @param key Animation set key
  * @param model GLTF Model
  * @param animation Animation key
  */
-const pushAnimation = (model: string, animation: string) => {
-    if (!activeAnimations[model]) activeAnimations[model] = [];
-    if (getAnimationFromLast(model)?.key === animation) return;
+const pushAnimation = (key: string, model: string, animation: string) => {
+    const k = `${key}_${model}`;
+    if (!activeAnimations[k]) activeAnimations[k] = [];
+    if (getAnimationFromLast(k)?.key === animation) return;
 
-    activeAnimations[model].push({
+    activeAnimations[k].push({
         key: animation,
         elapsed: 0,
     });
 
-    activeAnimations[model].slice(activeAnimations[model].length - 2);
+    activeAnimations[k].slice(activeAnimations[k].length - 2);
 };
 
 /**
  * Gets the current and previous animation
+ * @param key Animation set key
  * @param model GLTF Model
  */
-const getActiveAnimations = (model: string) => {
-    if (!activeAnimations[model]) return null;
-    return activeAnimations[model].slice(activeAnimations[model].length - 2);
+const getActiveAnimations = (key: string, model: string) => {
+    const k = `${key}_${model}`;
+    if (!activeAnimations[k]) return null;
+    return activeAnimations[k].slice(activeAnimations[k].length - 2);
 };
 
 /**
  * Advances the animation
  * @param elapsed Time elasped since last update
+ * @param key Animation set key
  */
-const advanceAnimation = (elapsed: number) => {
+const advanceAnimation = (elapsed: number, key?: string) => {
     Object.keys(activeAnimations).forEach(m => {
+        if (key && m.indexOf(key) !== 0) return;
+
         const current = getAnimationFromLast(m);
         const previous = getAnimationFromLast(m, 1);
 
