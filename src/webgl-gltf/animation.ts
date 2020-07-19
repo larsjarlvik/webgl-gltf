@@ -19,6 +19,7 @@ const getAnimationFromLast = (track: string, key: string, offset = 0) => {
 
 /**
  * Sets the active animation
+ * @param track Animation track
  * @param key Animation set key
  * @param model GLTF Model
  * @param animation Animation key
