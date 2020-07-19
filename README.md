@@ -15,13 +15,14 @@ Please see the wiki for documentation
 * PBR materials (base color, metal-roughness, normal, occlusion and emissive)
 * Animations
 * Animation blending
+* Multiple animation tracks
 * GLTF+bin files
 
 ## Does NOT support
 * Fully binary (`.glb`) files
 * GLTF with embedded data
 * Any GLTF extensions
-* And probably a lot more...
+* All animation interpolations are treated as LINEAR
 
 ## Demo
 * Robot: https://larsjarlvik.github.io/?model=robot

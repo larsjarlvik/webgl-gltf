@@ -62,7 +62,7 @@ export interface Transform {
 export interface KeyFrame {
     time: number;
     transform: vec3 | quat;
-    type: string;
+    type: 'translation' | 'rotation' | 'scale';
 }
 
 /**

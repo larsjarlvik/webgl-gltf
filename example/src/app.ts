@@ -11,6 +11,7 @@ import * as gltf from 'webgl-gltf';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const gl = canvas.getContext('webgl') as WebGLRenderingContext;
 
+const track = 'track';
 const blendTime = 300;
 let lastFrame = 0;
 
@@ -36,13 +37,13 @@ const listAnimations = (models: gltf.Model[]) => {
     models.forEach(model => {
         if (Object.keys(model.animations).length === 0) return;
 
-        gltf.pushAnimation('default', model.name, Object.keys(model.animations)[0]);
+        gltf.pushAnimation(track, 'default', model.name, Object.keys(model.animations)[0]);
 
         const ui = document.getElementById('ui') as HTMLElement;
         Object.keys(model.animations).forEach(a => {
             const btn = document.createElement('button');
             btn.innerText = a;
-            btn.addEventListener('click', () => gltf.pushAnimation('default', model.name, a));
+            btn.addEventListener('click', () => gltf.pushAnimation(track, 'default', model.name, a));
             ui.appendChild(btn);
         });
     });
@@ -59,7 +60,7 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
     models.forEach(model => {
         const animation = gltf.getActiveAnimations('default', model.name);
 
-        if (animation !== null) {
+        if (animation) {
             const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
             animationTransforms.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
             gl.uniform1i(uniforms.isAnimated, 1);

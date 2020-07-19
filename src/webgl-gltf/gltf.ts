@@ -129,6 +129,7 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
             type: c.target.path,
             time,
             buffer,
+            interpolation: sampler.interpolation ? sampler.interpolation : 'LINEAR',
         };
     });
 
@@ -143,23 +144,25 @@ const loadAnimation = (gltf: gltf.GlTf, animation: gltf.Animation, buffers: Arra
         }
 
         for (let i = 0; i < channel.time.data.length; i ++) {
+            const size = channel.interpolation === 'CUBICSPLINE' ? channel.buffer.size * 3 : channel.buffer.size;
+            const offset = channel.interpolation === 'CUBICSPLINE' ? channel.buffer.size : 0;
+
             const transform = channel.type === 'rotation'
                 ? quat.fromValues(
-                    channel.buffer.data[i * channel.buffer.size],
-                    channel.buffer.data[i * channel.buffer.size + 1],
-                    channel.buffer.data[i * channel.buffer.size + 2],
-                    channel.buffer.data[i * channel.buffer.size + 3]
+                    channel.buffer.data[i * size + offset],
+                    channel.buffer.data[i * size + offset + 1],
+                    channel.buffer.data[i * size + offset + 2],
+                    channel.buffer.data[i * size + offset + 3]
                 )
                 : vec3.fromValues(
-                    channel.buffer.data[i * channel.buffer.size],
-                    channel.buffer.data[i * channel.buffer.size + 1],
-                    channel.buffer.data[i * channel.buffer.size + 2]
+                    channel.buffer.data[i * size + offset],
+                    channel.buffer.data[i * size + offset + 1],
+                    channel.buffer.data[i * size + offset + 2]
                 );
 
             c[channel.node!][channel.type].push({
                 time: channel.time.data[i],
                 transform: transform,
-                jointId: channel.node,
                 type: channel.type,
             } as KeyFrame)
         }
@@ -299,7 +302,6 @@ const loadModel = async (gl: GLContext, uri: string) => {
         return {
             joints: x.joints,
             inverseBindTransforms,
-            skeleton: x.skeleton,
         };
     }) : [] as Skin[];
 
