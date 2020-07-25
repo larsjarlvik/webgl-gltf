@@ -175,7 +175,7 @@ const loadMesh = (gl: GLContext, gltf: gltf.GlTf, mesh: gltf.Mesh, buffers: Arra
     let indices: WebGLBuffer | null = null;
     let elementCount = 0;
 
-    if (mesh.primitives[0].indices) {
+    if (mesh.primitives[0].indices !== undefined) {
         const indexAccessor = gltf.accessors![mesh.primitives[0].indices!];
         const indexBuffer = readBufferFromFile(gltf, buffers, indexAccessor);
 
