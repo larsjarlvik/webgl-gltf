@@ -3,7 +3,10 @@ export {
     dispose,
  } from './gltf';
 
-export { getAnimationTransforms } from './animator';
+export {
+    getAnimationTransforms,
+    applyToSkin,
+} from './animator';
 
 export {
     pushAnimation,

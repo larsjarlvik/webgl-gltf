@@ -105,7 +105,7 @@ const loadNodes = (index: number, node: gltf.Node): Node => {
     if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
     if (node.rotation !== undefined) applyRotationFromQuat(transform, node.rotation);
     if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
-    if (node.matrix !== undefined) mat4.copy(transform, createMat4FromArray(node.matrix));
+    if (node.matrix !== undefined) createMat4FromArray(node.matrix);
 
     return {
         id: index,

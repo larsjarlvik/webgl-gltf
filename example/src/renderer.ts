@@ -23,9 +23,6 @@ const applyTexture = (gl: WebGLRenderingContext, texture: WebGLTexture | null, t
 }
 
 const renderModel = (gl: WebGLRenderingContext, model: Model, node: number, transform: mat4, uniforms: DefaultShader) => {
-    const t = mat4.create();
-    mat4.multiply(t, transform, model.nodes[node].localBindTransform);
-
     if (model.nodes[node].mesh !== undefined) {
         const mesh = model.meshes[model.nodes[node].mesh!];
         const material = model.materials[mesh.material];

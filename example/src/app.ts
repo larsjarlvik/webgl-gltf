@@ -62,7 +62,10 @@ const render = (uniforms: DefaultShader, models: gltf.Model[]) => {
 
         if (animation) {
             const animationTransforms = gltf.getAnimationTransforms(model, animation, blendTime);
-            animationTransforms.forEach((x, i) => { gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x); });
+            gltf.applyToSkin(model, animationTransforms).forEach((x, i) => {
+                gl.uniformMatrix4fv(uniforms.jointTransform[i], false, x);
+            });
+
             gl.uniform1i(uniforms.isAnimated, 1);
         } else {
             gl.uniform1i(uniforms.isAnimated, 0);

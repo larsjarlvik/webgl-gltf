@@ -1,5 +1,6 @@
-import { Model, KeyFrame, Skin, Transform } from './types/model';
+
 import { mat4, vec3, quat } from 'gl-matrix';
+import { KeyFrame, Model, Skin, Transform } from './types/model';
 import { ActiveAnimation } from './animation';
 
 const getPreviousAndNextKeyFrame = (keyFrames: KeyFrame[], animationTime: number) => {
@@ -14,7 +15,7 @@ const getPreviousAndNextKeyFrame = (keyFrames: KeyFrame[], animationTime: number
     }
 
     return { previous, next };
-}
+};
 
 const getTransform = (keyFrames: KeyFrame[], duration: number) => {
     if (keyFrames.length === 1) {
@@ -50,28 +51,6 @@ interface TransformMatrices {
     [key: number]: mat4;
 }
 
-const applyTransforms = (appliedTransforms: mat4[], model: Model, transforms: TransformMatrices, matrix: mat4, skin: Skin, nodeIndex: number) => {
-    const node = model.nodes[nodeIndex];
-
-    if (transforms[node.id] !== undefined) {
-        mat4.multiply(matrix, matrix, transforms[node.id]);
-    }
-
-    const transformIndex = skin.joints.indexOf(node.id);
-    const ibt = skin.inverseBindTransforms[transformIndex];
-
-    if (ibt) {
-        appliedTransforms[transformIndex] = mat4.create();
-        mat4.multiply(appliedTransforms[transformIndex], matrix, ibt);
-    }
-
-    node.children.forEach(childNode => {
-        const childTransform = mat4.create();
-        mat4.copy(childTransform, matrix);
-        applyTransforms(appliedTransforms, model, transforms, childTransform, skin, childNode);
-    });
-};
-
 const get = (c: Transform, elapsed: number) => {
     const t = c && c.translation.length > 0 ? getTransform(c.translation, elapsed) as vec3 : vec3.create();
     const r = c && c.rotation.length > 0 ? getTransform(c.rotation, elapsed) as quat : quat.create();
@@ -79,11 +58,35 @@ const get = (c: Transform, elapsed: number) => {
     return { t, r, s };
 };
 
+const applyTransform = (model: Model, appliedTransforms: mat4[], transforms: TransformMatrices, matrix: mat4, skin: Skin, nodeIndex: number, inverse: boolean) => {
+    const node = model.nodes[nodeIndex];
+    const transformIndex = skin.joints.indexOf(node.id);
+
+    if (transforms[node.id] !== undefined) {
+        mat4.multiply(matrix, matrix, transforms[node.id]);
+    }
+
+    if (inverse) {
+        const ibt = skin.inverseBindTransforms[transformIndex];
+
+        if (ibt) {
+            appliedTransforms[transformIndex] = mat4.create();
+            mat4.multiply(appliedTransforms[transformIndex], matrix, ibt);
+        }
+    } else {
+        appliedTransforms[transformIndex] = matrix;
+    }
+
+    node.children.forEach(childNode => {
+        applyTransform(model, appliedTransforms, transforms, mat4.clone(matrix), skin, childNode, inverse);
+    });
+};
+
 /**
  * Blends two animations and returns their transform matrices
  * @param model GLTF Model
  * @param activeAnimations Currently running animations
- * @param blendTime How long the blend should be in milliseconds
+ * @param blendTime Length of animation blend in milliseconds
  */
 const getAnimationTransforms = (model: Model, activeAnimations: Record<string, ActiveAnimation[]>, blendTime = 0) => {
     const transforms: { [key: number]: mat4 } = {};
@@ -117,10 +120,21 @@ const getAnimationTransforms = (model: Model, activeAnimations: Record<string, A
         });
     });
 
+    return transforms;
+};
+
+/**
+ * Applies transforms to skin
+ * @param model GLTF Model
+ * @param transforms Raw transforms
+ * @param blendTime Use inverse bind transform
+ */
+const applyToSkin = (model: Model, transforms: { [key: number]: mat4 }, inverse = true) => {
     const appliedTransforms: mat4[] = [];
+
     model.skins.forEach(skin => {
         const root = model.rootNode;
-        applyTransforms(appliedTransforms, model, transforms, mat4.create(), skin, root);
+        applyTransform(model, appliedTransforms, transforms, mat4.create(), skin, root, inverse);
     });
 
     return appliedTransforms;
@@ -128,4 +142,5 @@ const getAnimationTransforms = (model: Model, activeAnimations: Record<string, A
 
 export {
     getAnimationTransforms,
+    applyToSkin,
 };
