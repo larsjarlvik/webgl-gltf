@@ -102,9 +102,9 @@ const getBufferFromName = (gl: GLContext, gltf: gltf.GlTf, buffers: ArrayBuffer[
 const loadNodes = (index: number, node: gltf.Node): Node => {
     const transform = mat4.create();
 
-    if (node.translation !== undefined) mat4.translate(transform, transform, node.translation);
+    if (node.translation !== undefined) mat4.translate(transform, transform, vec3.fromValues(node.translation[0], node.translation[1], node.translation[1]));
     if (node.rotation !== undefined) applyRotationFromQuat(transform, node.rotation);
-    if (node.scale !== undefined) mat4.scale(transform, transform, node.scale);
+    if (node.scale !== undefined) mat4.scale(transform, transform, vec3.fromValues(node.scale[0], node.scale[1], node.scale[1]));
     if (node.matrix !== undefined) createMat4FromArray(node.matrix);
 
     return {

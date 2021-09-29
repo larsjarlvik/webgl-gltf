@@ -38,11 +38,9 @@ module.exports = {
         new HtmlWebpackPlugin({ template: './example/index.html' }),
     ],
     devServer: {
-        publicPath: '/',
-        contentBase: './example/static',
-        stats: {
-            children: false,
-            modules: false,
+        port: 8080,
+        static: {
+            directory: path.join(__dirname, 'example/static'),
         },
     },
 }
