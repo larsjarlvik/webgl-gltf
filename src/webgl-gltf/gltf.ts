@@ -54,6 +54,7 @@ const getTexture = async (gl: GLContext, uri: string) => {
             resolve(texture!);
         }
         img.src = uri;
+        img.crossOrigin = 'undefined';
     });
 };
 

@@ -17,7 +17,7 @@ Please see the wiki for documentation
 * Animation blending
 * Multiple animation tracks
 * GLTF+bin files
-
+* GLTF+bin files over the Internet (CORS should be enabled for all files)
 ## Does NOT support
 * Fully binary (`.glb`) files
 * GLTF with embedded data
