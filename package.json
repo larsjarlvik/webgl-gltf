@@ -34,7 +34,7 @@
     "@typescript-eslint/parser": "^4.32.0",
     "clean-webpack-plugin": "^4.0.0",
     "eslint": "^7.32.0",
-    "eslint-loader": "^3.0.3",
+    "eslint-loader": "^4.0.2",
     "html-webpack-plugin": "^5.3.2",
     "rimraf": "^3.0.2",
     "ts-loader": "^9.2.6",
