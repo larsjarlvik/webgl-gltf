@@ -28,9 +28,26 @@ export enum BufferType {
     Short = 5123,
 }
 
+const resolveEmbeddedBuffer = (uri: string): string => {
+    const content = uri.split(',')[1]; 
+    const binaryData = atob(content); 
+    const arrayBuffer = new ArrayBuffer(binaryData.length);
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    for (let i = 0; i < binaryData.length; i++) {
+        uint8Array[i] = binaryData.charCodeAt(i);
+    }
+
+    const blob = new Blob([uint8Array], { type: 'application/octet-stream' }); // Crea un Blob
+    return URL.createObjectURL(blob); 
+}
+
+const EMBEDDED_DATA_REGEXP = /(.*)data:(.*?)(;base64)?,(.*)$/;
+
 const getBuffer = async (path: string, buffer: string) => {
     const dir = path.split('/').slice(0, -1).join('/');
-    const response = await fetch(`${dir}/${buffer}`);
+    const finalPath = EMBEDDED_DATA_REGEXP.test(buffer) ? resolveEmbeddedBuffer(buffer) : `${dir}/${buffer}`;
+    const response = await fetch(finalPath);
     return await response.arrayBuffer();
 };
 
@@ -53,7 +70,7 @@ const getTexture = async (gl: GLContext, uri: string) => {
             gl.generateMipmap(gl.TEXTURE_2D);
             resolve(texture!);
         }
-        img.src = uri;
+        img.src = EMBEDDED_DATA_REGEXP.test(uri) ? resolveEmbeddedBuffer(uri) : uri;
         img.crossOrigin = 'undefined';
     });
 };
